@@ -1,5 +1,3 @@
-package rencode
-
 //
 // go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
@@ -19,49 +17,17 @@ package rencode
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import (
-	"bytes"
-)
+/*
+Package rencode is a Go implementation of https://github.com/aresch/rencode
 
-// this hack allows fetching keys by either string or byte slice type
-// no other special matching is performed with other slice types
-func deepEqual(a, b interface{}) bool {
-	switch a.(type) {
-	case string:
-		switch b.(type) {
-		case []byte:
-			return bytes.Compare([]byte(a.(string)), b.([]byte)) == 0
-		case string:
-			return a == b
-		default:
-			return false
-		}
-	case []byte:
-		switch b.(type) {
-		case []byte:
-			return bytes.Compare(a.([]byte), b.([]byte)) == 0
-		case string:
-			return bytes.Compare([]byte(b.(string)), a.([]byte)) == 0
-		default:
-			return false
-		}
-	case Dictionary:
-		switch b.(type) {
-		case Dictionary:
-			d1 := a.(Dictionary)
-			d2 := b.(Dictionary)
-			return d1.Equals(&d2)
-		}
-		return false
-	case List:
-		switch b.(type) {
-		case List:
-			l1 := a.(List)
-			l2 := b.(List)
-			return l1.Equals(&l2)
-		}
-		return false
-	}
+The rencode logic is similar to bencode (https://en.wikipedia.org/wiki/Bencode).
+For complex, heterogeneous data structures with many small elements, r-encodings take up significantly less space than b-encodings.
 
-	return a == b
-}
+Usage
+
+You can use either specific methods to encode one of the supported types, or the interface-generic Encode() method.
+
+The DecodeNext() method can be used to decode the next value from the rencode stream.
+
+*/
+package rencode
