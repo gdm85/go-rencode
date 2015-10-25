@@ -22,6 +22,7 @@ package rencode
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"strings"
 	"testing"
@@ -396,28 +397,186 @@ func TestDecodeStringBytes(t *testing.T) {
 	}
 }
 
-/*
-   def test_decode_fixed_list(self):
-       l = [100, False, b"foobar", u("bäz").encode("utf8")]*4
-       self.assertEqual(rencode.loads(rencode.dumps(l)), tuple(l))
-       self.assertRaises(IndexError, rencode.loads, bytes(bytearray([194])))
+func TestDecodeFixedList(t *testing.T) {
+	var l List
 
-   def test_decode_list(self):
-       l = [100, False, b"foobar", u("bäz").encode("utf8")]*80
-       self.assertEqual(rencode.loads(rencode.dumps(l)), tuple(l))
-       self.assertRaises(IndexError, rencode.loads, bytes(bytearray([59])))
+	l.Add(int8(100))
+	l.Add(false)
+	l.Add([]byte("foobar"))
+	l.Add([]byte("bäz"))
 
-   def test_decode_fixed_dict(self):
-       s = b"abcdefghijk"
-       d = dict(zip(s, [1234]*len(s)))
-       self.assertEqual(rencode.loads(rencode.dumps(d)), d)
-       self.assertRaises(IndexError, rencode.loads, bytes(bytearray([104])))
+	e := Encoder{}
 
-   def test_decode_dict(self):
-       s = b"abcdefghijklmnopqrstuvwxyz1234567890"
-       d = dict(zip(s, [b"foo"*120]*len(s)))
-       d2 = {b"foo": d, b"bar": d, b"baz": d}
-       self.assertEqual(rencode.loads(rencode.dumps(d2)), d2)
-       self.assertRaises(IndexError, rencode.loads, bytes(bytearray([60])))
+	err := e.Encode(l)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-*/
+	t.Log(hex.Dump(e.Bytes()))
+
+	d := NewDecoder(bytes.NewReader(e.Bytes()))
+
+	found, err := d.DecodeNext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := found.(List)
+
+	for i, v := range l.Values() {
+		fv, err := f.Get(i)
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch v.(type) {
+		case []byte:
+			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		default:
+			if v != fv {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		}
+	}
+}
+
+func TestDecodeList(t *testing.T) {
+	var l List
+
+	for i := 0; i < 80; i++ {
+		l.Add(int8(100))
+		l.Add(false)
+		l.Add([]byte("foobar"))
+		l.Add([]byte("bäz"))
+	}
+
+	e := Encoder{}
+
+	err := e.Encode(l)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(hex.Dump(e.Bytes()))
+
+	d := NewDecoder(bytes.NewReader(e.Bytes()))
+
+	found, err := d.DecodeNext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := found.(List)
+
+	for i, v := range l.Values() {
+		fv, err := f.Get(i)
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch v.(type) {
+		case []byte:
+			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		default:
+			if v != fv {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		}
+	}
+}
+
+func TestDecodeFixedDict(t *testing.T) {
+	var dict Dictionary
+
+	dict.Add("abcdefghijk", int16(1234))
+	dict.Add(false, []byte("bäz"))
+
+	e := Encoder{}
+
+	err := e.Encode(dict)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(hex.Dump(e.Bytes()))
+
+	d := NewDecoder(bytes.NewReader(e.Bytes()))
+
+	found, err := d.DecodeNext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := found.(Dictionary)
+
+	keys := dict.Keys()
+	for i, v := range dict.Values() {
+		fv, err := f.Get(keys[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch v.(type) {
+		case []byte:
+			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		default:
+			if v != fv {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		}
+	}
+}
+
+func TestDecodeDictionary(t *testing.T) {
+	var dict Dictionary
+	var nestedDict Dictionary
+
+	nestedDict.Add("abcdefghijk", int16(1234))
+	nestedDict.Add(false, []byte("bäz"))
+
+	for i := 0; i < 120; i++ {
+		dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
+		dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
+	}
+
+	e := Encoder{}
+
+	err := e.Encode(dict)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(hex.Dump(e.Bytes()))
+
+	d := NewDecoder(bytes.NewReader(e.Bytes()))
+
+	found, err := d.DecodeNext()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := found.(Dictionary)
+
+	keys := dict.Keys()
+	for i, v := range dict.Values() {
+		fv, err := f.Get(keys[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		switch v.(type) {
+		case []byte:
+			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		case Dictionary:
+			d1 := v.(Dictionary)
+			d2 := fv.(Dictionary)
+			if !d1.Compare(&d2) {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		default:
+			if v != fv {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
+		}
+	}
+}

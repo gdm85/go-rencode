@@ -46,6 +46,73 @@ func (r *Encoder) Encode(data interface{}) error {
 				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 			}
 			return r.EncodeBigNumber(s)
+		case List:
+			x := data.(List)
+			if x.Length() < LIST_FIXED_COUNT {
+				_, err := r.buffer.Write([]byte{byte(LIST_FIXED_START + x.Length())})
+				if err != nil {
+					return err
+				}
+				for _, v := range x.Values() {
+					err = r.Encode(v)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+			_, err := r.buffer.Write([]byte{byte(CHR_LIST)})
+			if err != nil {
+				return err
+			}
+
+			for _, v := range x.Values() {
+				err = r.Encode(v)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+			return err
+		case Dictionary:
+			x := data.(Dictionary)
+			if x.Length() < DICT_FIXED_COUNT {
+				_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + x.Length())})
+				if err != nil {
+					return err
+				}
+				keys := x.Keys()
+				for i, v := range x.Values() {
+					err = r.Encode(keys[i])
+					if err != nil {
+						return err
+					}
+					err = r.Encode(v)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+			_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
+			if err != nil {
+				return err
+			}
+			keys := x.Keys()
+			for i, v := range x.Values() {
+				err = r.Encode(keys[i])
+				if err != nil {
+					return err
+				}
+				err = r.Encode(v)
+				if err != nil {
+					return err
+				}
+			}
+
+			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+			return err
 		case bool:
 			return r.EncodeBool(data.(bool))
 		case float32:
@@ -63,8 +130,7 @@ func (r *Encoder) Encode(data interface{}) error {
 // template block ends
 
 var (
-	intTypes           map[string]int
-	supportedListTypes = []string{"bool", "float32", "float64", "string", "int8"}
+	intTypes map[string]int
 )
 
 func init() {
@@ -76,20 +142,8 @@ func init() {
 	} else if ^uint(0) == uint(^uint64(0)) {
 		// same here, 'uint' is not being defined on purpose
 		intTypes["int"] = 63
-
-		// add now to supported list types, since it's not referenced in intTypes map
-		supportedListTypes = append(supportedListTypes, "uint")
 	} else {
 		panic("unrecognized default uint bitsize")
-	}
-
-	// add integer types to supported list types
-	for k, _ := range intTypes {
-		// array of uint8 == array of byte, do not support as lists
-		if k == "uint8" {
-			continue
-		}
-		supportedListTypes = append(supportedListTypes, k)
 	}
 }
 
@@ -181,91 +235,6 @@ func main() {
 				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 			}
 			return r.EncodeBigNumber(s)`)
-
-	// support lists of all supported types
-	for _, t := range supportedListTypes {
-		fmt.Printf(`		case []%s:
-			x := data.([]%s)
-			if len(x) < LIST_FIXED_COUNT {
-				_, err := r.buffer.Write([]byte{byte(LIST_FIXED_START + len(x))})
-				if err != nil {
-					return err
-				}
-				for _, v := range x {
-					err = r.Encode(v)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			}
-			_, err := r.buffer.Write([]byte{byte(CHR_LIST)})
-			if err != nil {
-				return err
-			}
-
-			for _, v := range x {
-				err = r.Encode(v)
-				if err != nil {
-					return err
-				}
-			}
-
-			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
-			return err`+"\n", t, t)
-	}
-
-	// re-add byte to supported map types
-	supportedListTypes = append(supportedListTypes, "byte")
-
-	if 1 == 2 {
-		// support maps of all supported types
-		for _, keyType := range supportedListTypes {
-			for _, valueType := range supportedListTypes {
-				for _, listOrNot := range []string{"", "[]"} {
-					mapType := fmt.Sprintf("map[%s]%s%s", keyType, listOrNot, valueType)
-					// generate the map type matching case
-					fmt.Printf(`		case %s:
-						x := data.(%s)
-						if len(x) < DICT_FIXED_COUNT {
-							_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + len(x))})
-							if err != nil {
-								return err
-							}
-							for k, v := range x {
-								err = r.Encode(k)
-								if err != nil {
-									return err
-								}
-								err = r.Encode(v)
-								if err != nil {
-									return err
-								}
-							}
-							return nil
-						}
-						_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
-						if err != nil {
-							return err
-						}
-
-						for k, v := range x {
-							err = r.Encode(k)
-							if err != nil {
-								return err
-							}
-							err = r.Encode(v)
-							if err != nil {
-								return err
-							}
-						}
-
-						_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
-						return err`+"\n", mapType, mapType)
-				}
-			}
-		}
-	} // temporarily disable maps because of huge source (13k)
 
 	// tail default case
 	fmt.Println(`default:

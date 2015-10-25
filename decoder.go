@@ -70,13 +70,16 @@ func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
 	return
 }
 
-func (r *Decoder) DecodeNext() (v interface{}, err error) {
-	var typeCode byte
-	typeCode, err = r.readByte()
+func (r *Decoder) DecodeNext() (interface{}, error) {
+	typeCode, err := r.readByte()
 	if err != nil {
-		return
+		return nil, err
 	}
 
+	return r.decode(typeCode)
+}
+
+func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 	switch typeCode {
 	case CHR_TRUE:
 		v = true
@@ -131,12 +134,10 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 		err = binary.Read(r.r, binary.BigEndian, &data)
 		v = data
 	case CHR_LIST:
-		panic("list decoding not yet implemented")
-		//v, err = r.decodeList()
+		v, err = r.decodeList()
 		return
 	case CHR_DICT:
-		panic("dict decoding not yet implemented")
-		//v, err = r.decodeDict()
+		v, err = r.decodeDict()
 		return
 	default:
 		if INT_POS_FIXED_START <= typeCode && typeCode < INT_POS_FIXED_START+INT_POS_FIXED_COUNT {
@@ -186,55 +187,123 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 		}
 
 		if LIST_FIXED_START <= typeCode && typeCode <= (LIST_FIXED_START+LIST_FIXED_COUNT-1) {
-			panic("list decoding not yet implemented")
+			var l List
+			var value interface{}
+			var i byte
+			size := typeCode - LIST_FIXED_START
+
+			for i = 0; i < size; i++ {
+				// get next value
+				value, err = r.DecodeNext()
+				if err != nil {
+					return
+				}
+
+				// add, never update existing key
+				l.Add(value)
+			}
+			v = l
 		}
 		if DICT_FIXED_START <= typeCode && typeCode < DICT_FIXED_START+DICT_FIXED_COUNT {
-			panic("map decoding not yet implemented")
+			var d Dictionary
+			var key, value interface{}
+			var i byte
+			size := typeCode - DICT_FIXED_START
+
+			for i = 0; i < size; i++ {
+				// get next key
+				key, err = r.DecodeNext()
+				if err != nil {
+					return
+				}
+
+				// get next value
+				value, err = r.DecodeNext()
+				if err != nil {
+					return
+				}
+
+				// add, never update existing key
+				err = d.Add(key, value)
+				if err != nil {
+					return
+				}
+			}
+			v = d
 		}
 	} // end of switch
 
 	// AOK
-	err = nil
 	return
 }
 
-/*func (r *Decoder) PushOffset() error {
-	offset, err := r.r.Seek(1, 0)
-	if err != nil {
-		return err
+func (r *Decoder) decodeDict() (d Dictionary, err error) {
+	var key, value interface{}
+	var typeCode byte
+
+	for {
+		typeCode, err = r.readByte()
+		if err != nil {
+			return
+		}
+		if typeCode == CHR_TERM {
+			// no more (key, value) pairs
+			break
+		}
+
+		// get next key
+		key, err = r.decode(typeCode)
+		if err != nil {
+			return
+		}
+
+		typeCode, err = r.readByte()
+		if err != nil {
+			return
+		}
+		if typeCode == CHR_TERM {
+			err = fmt.Errorf("incomplete key-value pair in dictionary data")
+			break
+		}
+
+		// get next value
+		value, err = r.decode(typeCode)
+		if err != nil {
+			return
+		}
+
+		// add, never update existing key
+		err = d.Add(key, value)
+		if err != nil {
+			return
+		}
 	}
-	r.offsets = append(r.offsets, offset)
-	return nil
+
+	return
 }
 
-func (r *Decoder) PopOffset() error {
-	if len(r.offsets) == 0 {
-		return fmt.Errorf("no more pushed offsets available")
+func (r *Decoder) decodeList() (l List, err error) {
+	var value interface{}
+	var typeCode byte
+
+	for {
+		typeCode, err = r.readByte()
+		if err != nil {
+			return
+		}
+		if typeCode == CHR_TERM {
+			// no more values
+			break
+		}
+
+		// get next value
+		value, err = r.decode(typeCode)
+		if err != nil {
+			return
+		}
+
+		l.Add(value)
 	}
-	offset = r.offsets[len(r.offsets)-1]
-	r.offsets = r.offsets[:len(r.offsets)-1]
 
-	_, err := r.r.Seek(0, offset)
-	return err
-}*/
-
-/*func (r *Decoder) DecodeInt8(v *int8) error {
-	typeCode := []byte{0}
-	_, err := r.r.Read(typeCode)
-	if err != nil {
-		return err
-	}
-
-	if typeCode != CHR_INT1 {
-		return fmt.Errorf("expected type code %d but %d found instead", CHR_INT1, typeCode)
-	}
-
-	data := []byte{0}
-	_, err = r.r.Read(data)
-	if err != nil {
-		return err
-	}
-	*v = int8(data[0])
-
-	return nil
-}*/
+	return
+}
