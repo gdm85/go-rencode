@@ -33,6 +33,11 @@ type List struct {
 	values []interface{}
 }
 
+// NewList returns a new list with the values specified as arguments
+func NewList(values ...interface{}) List {
+	return List{values}
+}
+
 // Add appends a new value to the list
 func (l *List) Add(value interface{}) {
 	l.values = append(l.values, value)
