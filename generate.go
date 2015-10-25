@@ -48,63 +48,46 @@ func (r *Encoder) Encode(data interface{}) error {
 		return r.EncodeNone()
 	}
 	switch data.(type) {
-		case big.Int:
-			x := data.(big.Int)
-			s := x.String()
-			if len(s) > MAX_INT_LENGTH {
-				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
-			}
-			return r.EncodeBigNumber(s)
-		case List:
-			x := data.(List)
-			if x.Length() < LIST_FIXED_COUNT {
-				_, err := r.buffer.Write([]byte{byte(LIST_FIXED_START + x.Length())})
-				if err != nil {
-					return err
-				}
-				for _, v := range x.Values() {
-					err = r.Encode(v)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			}
-			_, err := r.buffer.Write([]byte{byte(CHR_LIST)})
+	case big.Int:
+		x := data.(big.Int)
+		s := x.String()
+		if len(s) > MAX_INT_LENGTH {
+			return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
+		}
+		return r.EncodeBigNumber(s)
+	case List:
+		x := data.(List)
+		if x.Length() < LIST_FIXED_COUNT {
+			_, err := r.buffer.Write([]byte{byte(LIST_FIXED_START + x.Length())})
 			if err != nil {
 				return err
 			}
-
 			for _, v := range x.Values() {
 				err = r.Encode(v)
 				if err != nil {
 					return err
 				}
 			}
-
-			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+			return nil
+		}
+		_, err := r.buffer.Write([]byte{byte(CHR_LIST)})
+		if err != nil {
 			return err
-		case Dictionary:
-			x := data.(Dictionary)
-			if x.Length() < DICT_FIXED_COUNT {
-				_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + x.Length())})
-				if err != nil {
-					return err
-				}
-				keys := x.Keys()
-				for i, v := range x.Values() {
-					err = r.Encode(keys[i])
-					if err != nil {
-						return err
-					}
-					err = r.Encode(v)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
+		}
+
+		for _, v := range x.Values() {
+			err = r.Encode(v)
+			if err != nil {
+				return err
 			}
-			_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
+		}
+
+		_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+		return err
+	case Dictionary:
+		x := data.(Dictionary)
+		if x.Length() < DICT_FIXED_COUNT {
+			_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + x.Length())})
 			if err != nil {
 				return err
 			}
@@ -119,22 +102,39 @@ func (r *Encoder) Encode(data interface{}) error {
 					return err
 				}
 			}
-
-			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+			return nil
+		}
+		_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
+		if err != nil {
 			return err
-		case bool:
-			return r.EncodeBool(data.(bool))
-		case float32:
-			return r.EncodeFloat32(data.(float32))
-		case float64:
-			return r.EncodeFloat64(data.(float64))
-		case []byte:
-			return r.EncodeBytes(data.([]byte))
-		case string:
-			// all strings will be treated as byte arrays
-			return r.EncodeBytes([]byte(data.(string)))
-		case int8:
-			return r.EncodeInt8(data.(int8))`
+		}
+		keys := x.Keys()
+		for i, v := range x.Values() {
+			err = r.Encode(keys[i])
+			if err != nil {
+				return err
+			}
+			err = r.Encode(v)
+			if err != nil {
+				return err
+			}
+		}
+
+		_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+		return err
+	case bool:
+		return r.EncodeBool(data.(bool))
+	case float32:
+		return r.EncodeFloat32(data.(float32))
+	case float64:
+		return r.EncodeFloat64(data.(float64))
+	case []byte:
+		return r.EncodeBytes(data.([]byte))
+	case string:
+		// all strings will be treated as byte arrays
+		return r.EncodeBytes([]byte(data.(string)))
+	case int8:
+		return r.EncodeInt8(data.(int8))`
 
 // template block ends
 
@@ -169,7 +169,7 @@ func signedGenerate(t string, bitsize int) {
 
 	if bitsize >= 15 {
 		fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
-				return r.EncodeInt16(int16(x))
+		return r.EncodeInt16(int16(x))
 		}`)
 	}
 
@@ -180,7 +180,7 @@ func signedGenerate(t string, bitsize int) {
 
 	if bitsize >= 31 {
 		fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
-				return r.EncodeInt32(int32(x))
+		return r.EncodeInt32(int32(x))
 		}`)
 	}
 
@@ -200,13 +200,13 @@ func unsignedGenerate(t string, bitsize int) {
 
 	if bitsize >= 16 {
 		fmt.Println(`		if x <= math.MaxInt16 {
-			return r.EncodeInt16(int16(x))
+		return r.EncodeInt16(int16(x))
 		}`)
 	}
 
 	if bitsize >= 32 {
 		fmt.Println(`		if x <= math.MaxInt32 {
-			return r.EncodeInt32(int32(x))
+		return r.EncodeInt32(int32(x))
 		}`)
 		return
 	}
@@ -238,15 +238,15 @@ func main() {
 	if _, ok := intTypes["uint"]; !ok {
 		caseStr += ", uint"
 	}
-	fmt.Printf("\t\tcase %s:\n", caseStr)
-	fmt.Println(`			s := fmt.Sprintf("%d", data)
-			if len(s) > MAX_INT_LENGTH {
-				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
-			}
-			return r.EncodeBigNumber(s)`)
+	fmt.Printf("\tcase %s:\n", caseStr)
+	fmt.Println(`		s := fmt.Sprintf("%d", data)
+		if len(s) > MAX_INT_LENGTH {
+			return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
+		}
+		return r.EncodeBigNumber(s)`)
 
 	// tail default case
-	fmt.Println(`default:
+	fmt.Println(`	default:
 		return fmt.Errorf("could not encode data of type %T", data)
 	}
 	panic("unexpected fallthrough")
