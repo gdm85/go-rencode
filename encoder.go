@@ -27,6 +27,7 @@ import (
 	"fmt"
 )
 
+// constants as defined in rencode.py
 const (
 	DEFAULT_FLOAT_BITS = 32 // Default number of bits for serialized floats, either 32 or 64 (also a parameter for dumps()).
 	MAX_INT_LENGTH     = 64 // Maximum length of integer when written as base 10 string.
@@ -61,14 +62,17 @@ const (
 	LIST_FIXED_COUNT = 64
 )
 
+// Encoder implements a rencode encoder
 type Encoder struct {
 	buffer bytes.Buffer
 }
 
+// Bytes returns the bytes of the underlying bytes buffer
 func (r *Encoder) Bytes() []byte {
 	return r.buffer.Bytes()
 }
 
+// EncodeInt8 encodes an int8 value
 func (r *Encoder) EncodeInt8(x int8) error {
 	if 0 <= x && x < INT_POS_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(INT_POS_FIXED_START + x)})
@@ -85,6 +89,7 @@ func (r *Encoder) EncodeInt8(x int8) error {
 	panic("impossible just happened")
 }
 
+// EncodeBool encodes a bool value
 func (r *Encoder) EncodeBool(b bool) error {
 	var data byte
 	if b {
@@ -97,6 +102,7 @@ func (r *Encoder) EncodeBool(b bool) error {
 	return err
 }
 
+// EncodeInt16 encodes an int16 value
 func (r *Encoder) EncodeInt16(x int16) error {
 	_, err := r.buffer.Write([]byte{CHR_INT2})
 	if err != nil {
@@ -105,6 +111,7 @@ func (r *Encoder) EncodeInt16(x int16) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
+// EncodeInt32 encodes an int32 value
 func (r *Encoder) EncodeInt32(x int32) error {
 	_, err := r.buffer.Write([]byte{CHR_INT4})
 	if err != nil {
@@ -113,6 +120,7 @@ func (r *Encoder) EncodeInt32(x int32) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
+// EncodeInt64 encodes an int64 value
 func (r *Encoder) EncodeInt64(x int64) error {
 	_, err := r.buffer.Write([]byte{CHR_INT8})
 	if err != nil {
@@ -121,6 +129,7 @@ func (r *Encoder) EncodeInt64(x int64) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
+// EncodeBigNumber encodes a big number (> 2^64)
 func (r *Encoder) EncodeBigNumber(s string) error {
 	_, err := r.buffer.Write([]byte{CHR_INT})
 	if err != nil {
@@ -134,11 +143,13 @@ func (r *Encoder) EncodeBigNumber(s string) error {
 	return err
 }
 
+// EncodeNone encodes a nil value without any type information
 func (r *Encoder) EncodeNone() error {
 	_, err := r.buffer.Write([]byte{CHR_NONE})
 	return err
 }
 
+// EncodeBytes encodes a byte slice; all strings should be encoded as byte slices
 func (r *Encoder) EncodeBytes(b []byte) error {
 	if len(b) < STR_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(STR_FIXED_START + len(b))})
@@ -160,6 +171,7 @@ func (r *Encoder) EncodeBytes(b []byte) error {
 	return err
 }
 
+// EncodeFloat32 encodes a float32 value
 func (r *Encoder) EncodeFloat32(f float32) error {
 	_, err := r.buffer.Write([]byte{CHR_FLOAT32})
 	if err != nil {
@@ -168,6 +180,7 @@ func (r *Encoder) EncodeFloat32(f float32) error {
 	return binary.Write(&r.buffer, binary.BigEndian, f)
 }
 
+// EncodeFloat64 encodes an float64 value
 func (r *Encoder) EncodeFloat64(f float64) error {
 	_, err := r.buffer.Write([]byte{CHR_FLOAT64})
 	if err != nil {

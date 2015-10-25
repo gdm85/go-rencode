@@ -27,6 +27,7 @@ import (
 	"strconv"
 )
 
+// Decoder implements a rencode decoder
 type Decoder struct {
 	r io.Reader
 }
@@ -39,6 +40,7 @@ func init() {
 	maxUint64.SetUint64(^uint64(0))
 }
 
+// NewDecoder returns a rencode decoder that sources all bytes from the specified reader
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r}
 }
@@ -70,6 +72,7 @@ func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
 	return
 }
 
+// DecodeNext returns the next available object stored in the rencode stream
 func (r *Decoder) DecodeNext() (interface{}, error) {
 	typeCode, err := r.readByte()
 	if err != nil {

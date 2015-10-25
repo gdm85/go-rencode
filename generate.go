@@ -34,6 +34,15 @@ import (
 	"math/big"
 )
 
+// Encode is the generic encoder method that will encode any of the following supported types:
+// * big.Int
+// * List
+// * Dictionary
+// * bool
+// * float32, float34
+// * []byte, string (all strings are stored as byte slices anyway)
+// * int8, int16, int32, int64, int
+// * uint8, uint16, uint32, uint64, uint
 func (r *Encoder) Encode(data interface{}) error {
 	if data == nil {
 		return r.EncodeNone()

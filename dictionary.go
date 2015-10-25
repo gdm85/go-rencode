@@ -24,18 +24,23 @@ import (
 )
 
 var (
+	// ErrKeyAlreadyExists is the error returned when the specified key is already defined within the dictionary
 	ErrKeyAlreadyExists = errors.New("key already exists in dictionary")
 )
 
+// Dictionary is a rencode-specific dictionary that allows any type of key to be mapped to any type of value
 type Dictionary struct {
 	List
 	keys []interface{}
 }
 
+// Keys returns all defined keys
 func (d *Dictionary) Keys() []interface{} {
 	return d.keys
 }
 
+// Get returns the value stored for the matching key.
+// Note that special equality rules apply.
 func (d *Dictionary) Get(key interface{}) (interface{}, error) {
 	for i, k := range d.keys {
 		if deepEqual(k, key) {
@@ -45,6 +50,7 @@ func (d *Dictionary) Get(key interface{}) (interface{}, error) {
 	return nil, ErrKeyNotFound
 }
 
+// Set updates or add the specified key with the specified value and returns true if a previous value was overwritten
 func (d *Dictionary) Set(key, value interface{}) bool {
 	for i, k := range d.keys {
 		if deepEqual(k, key) {
@@ -58,6 +64,7 @@ func (d *Dictionary) Set(key, value interface{}) bool {
 	return false
 }
 
+// Add appends a new (key, value) pair or returns an error if key already exists
 func (d *Dictionary) Add(key, value interface{}) error {
 	for _, k := range d.keys {
 		if deepEqual(k, key) {
@@ -70,7 +77,13 @@ func (d *Dictionary) Add(key, value interface{}) error {
 	return nil
 }
 
+// Equals will compare keys and values to be a perfect match.
+// Note that special equality rules apply.
 func (d *Dictionary) Equals(b *Dictionary) bool {
+	if d.Length() != b.Length() {
+		return false
+	}
+
 	keys2 := b.Keys()
 	for i, k1 := range d.keys {
 		if !deepEqual(k1, keys2[i]) {
