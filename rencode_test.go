@@ -24,6 +24,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strings"
 	"testing"
 )
@@ -574,13 +575,13 @@ func TestDecodeDictionary(t *testing.T) {
 		case Dictionary:
 			d1 := v.(Dictionary)
 			d2 := fv.(Dictionary)
-			if !d1.Compare(&d2) {
+			if !d1.Equals(&d2) {
 				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
 			}
 		case List:
 			l1 := v.(List)
 			l2 := fv.(List)
-			if !l1.Compare(&l2) {
+			if !l1.Equals(&l2) {
 				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
 			}
 		default:
@@ -605,5 +606,26 @@ func TestDecodeDictionary(t *testing.T) {
 
 	if string(fv.([]byte)) != "carrot" {
 		t.Fatal("carrot not found")
+	}
+}
+
+func TestDictionaryCompare(t *testing.T) {
+	var d1, d2 Dictionary
+
+	for i := 1; i <= 10; i++ {
+		key := fmt.Sprintf("key %d", i)
+
+		err := d1.Add(key, rand.Int())
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = d2.Add(key, rand.Int())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if d1.Equals(&d2) {
+		t.Fatal("for some reason, dictionaries that should be different are the same")
 	}
 }

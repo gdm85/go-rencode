@@ -70,7 +70,7 @@ func (d *Dictionary) Add(key, value interface{}) error {
 	return nil
 }
 
-func (d *Dictionary) Compare(b *Dictionary) bool {
+func (d *Dictionary) Equals(b *Dictionary) bool {
 	keys2 := b.Keys()
 	for i, k1 := range d.keys {
 		if !deepEqual(k1, keys2[i]) {
