@@ -140,52 +140,38 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 		return
 	default:
 		if INT_POS_FIXED_START <= typeCode && typeCode < INT_POS_FIXED_START+INT_POS_FIXED_COUNT {
-			var b byte
-			b, err = r.readByte()
-			if err != nil {
-				return
-			}
-
-			v = int8(b) - INT_POS_FIXED_START
+			v = int8(typeCode) - INT_POS_FIXED_START
 			return
 		}
 		if INT_NEG_FIXED_START <= typeCode && typeCode < INT_NEG_FIXED_START+INT_NEG_FIXED_COUNT {
-			var b byte
-			b, err = r.readByte()
-			if err != nil {
-				return
-			}
-
-			i := (int(b) - INT_NEG_FIXED_START + 1) * -1
+			i := (int(typeCode) - INT_NEG_FIXED_START + 1) * -1
 			v = int8(i)
 			return
 		}
 		if STR_FIXED_START <= typeCode && typeCode < STR_FIXED_START+STR_FIXED_COUNT {
-			var b byte
-			b, err = r.readByte()
-			if err != nil {
-				return
-			}
-
-			b = b - STR_FIXED_START + 1
+			b := typeCode - STR_FIXED_START + 1
 			data := make([]byte, b)
 
 			_, err = r.r.Read(data)
 			if err != nil {
 				return
 			}
-			v = string(data)
+			v = data
 			return
 		}
-		if 49 <= typeCode && typeCode <= 57 {
+		if '1' <= typeCode && typeCode <= '9' {
 			var collected []byte
 			collected, err = r.readSlice(':')
 			if err != nil {
 				return
 			}
 
+			// use the typeCode as first digit
+			n := []byte{typeCode}
+			n = append(n, collected...)
+
 			var stringSz int
-			stringSz, err = strconv.Atoi(string(collected))
+			stringSz, err = strconv.Atoi(string(n))
 			if err != nil {
 				return
 			}
@@ -196,7 +182,7 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 				return
 			}
 
-			v = string(data)
+			v = data
 		}
 
 		if LIST_FIXED_START <= typeCode && typeCode <= (LIST_FIXED_START+LIST_FIXED_COUNT-1) {

@@ -65,16 +65,20 @@ type Encoder struct {
 	buffer bytes.Buffer
 }
 
+func (r *Encoder) Bytes() []byte {
+	return r.buffer.Bytes()
+}
+
 func (r *Encoder) EncodeInt8(x int8) error {
-	if x >= 0 && x < INT_POS_FIXED_COUNT {
+	if 0 <= x && x < INT_POS_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(INT_POS_FIXED_START + x)})
 		return err
 	}
-	if x < 0 && x >= -INT_NEG_FIXED_COUNT {
+	if -INT_NEG_FIXED_COUNT <= x && x < 0 {
 		_, err := r.buffer.Write([]byte{byte(INT_NEG_FIXED_START - 1 - x)})
 		return err
 	}
-	if x >= -128 && x <= 127 {
+	if -128 < x && x <= 127 {
 		_, err := r.buffer.Write([]byte{CHR_INT1, byte(x)})
 		return err
 	}

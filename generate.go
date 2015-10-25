@@ -50,6 +50,7 @@ func (r *Encoder) Encode(data interface{}) error {
 		case []byte:
 			return r.EncodeBytes(data.([]byte))
 		case string:
+			// all strings will be treated as byte arrays
 			return r.EncodeBytes([]byte(data.(string)))
 		case int8:
 			return r.EncodeInt8(data.(int8))`
