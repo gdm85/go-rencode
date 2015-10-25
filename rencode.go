@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 package rencode
 
-//go:generate sh -c "go run --tags=generate generate.go > rencode_generated.go"
+//go:generate go run --tags=generate generate.go
 
 import (
 	"bytes"
@@ -65,7 +65,7 @@ type Rencode struct {
 	buffer bytes.Buffer
 }
 
-func (r *Rencode) encodeInt8(x int8) error {
+func (r *Rencode) EncodeInt8(x int8) error {
 	if x >=0 && x < INT_POS_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(INT_POS_FIXED_START + x)})
 		return err
@@ -81,7 +81,7 @@ func (r *Rencode) encodeInt8(x int8) error {
 	panic("impossible just happened")
 }
 
-func (r *Rencode) encodeBool(b bool) error {
+func (r *Rencode) EncodeBool(b bool) error {
 	var data byte
 	if b {
 		data = CHR_TRUE
@@ -93,7 +93,7 @@ func (r *Rencode) encodeBool(b bool) error {
 	return err
 }
 
-func (r *Rencode) encodeInt16(x int16) error {
+func (r *Rencode) EncodeInt16(x int16) error {
 	_, err := r.buffer.Write([]byte{CHR_INT2})
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (r *Rencode) encodeInt16(x int16) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
-func (r *Rencode) encodeInt32(x int32) error {
+func (r *Rencode) EncodeInt32(x int32) error {
 	_, err := r.buffer.Write([]byte{CHR_INT4})
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (r *Rencode) encodeInt32(x int32) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
-func (r *Rencode) encodeInt64(x int64) error {
+func (r *Rencode) EncodeInt64(x int64) error {
 	_, err := r.buffer.Write([]byte{CHR_INT8})
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (r *Rencode) encodeInt64(x int64) error {
 	return binary.Write(&r.buffer, binary.BigEndian, x)
 }
 
-func (r *Rencode) encodeBigNumber(s string) error {
+func (r *Rencode) EncodeBigNumber(s string) error {
 	_, err := r.buffer.Write([]byte{CHR_INT})
 	if err != nil {
 		return err
@@ -130,12 +130,12 @@ func (r *Rencode) encodeBigNumber(s string) error {
 	return err
 }
 
-func (r *Rencode) encodeNone() error {
+func (r *Rencode) EncodeNone() error {
 	_, err := r.buffer.Write([]byte{CHR_NONE})
 	return err
 }
 
-func (r *Rencode) encodeBytes(b []byte) error {
+func (r *Rencode) EncodeBytes(b []byte) error {
 	if len(b) < STR_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(STR_FIXED_START + len(b))})
 		if err != nil {
@@ -156,7 +156,7 @@ func (r *Rencode) encodeBytes(b []byte) error {
 	return err		
 }
 
-func (r *Rencode) encodeFloat32(f float32) error {
+func (r *Rencode) EncodeFloat32(f float32) error {
 	_, err := r.buffer.Write([]byte{CHR_FLOAT32})
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func (r *Rencode) encodeFloat32(f float32) error {
 	return binary.Write(&r.buffer, binary.BigEndian, f)
 }
 
-func (r *Rencode) encodeFloat64(f float64) error {
+func (r *Rencode) EncodeFloat64(f float64) error {
 	_, err := r.buffer.Write([]byte{CHR_FLOAT64})
 	if err != nil {
 		return err

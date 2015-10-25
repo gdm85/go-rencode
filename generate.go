@@ -33,23 +33,23 @@ import (
 	"math"
 )
 
-func (r *Rencode) encode(data interface{}) error {
+func (r *Rencode) Encode(data interface{}) error {
 	if data == nil {
-		return r.encodeNone()
+		return r.EncodeNone()
 	}
 	switch data.(type) {
 		case bool:
-			return r.encodeBool(data.(bool))
+			return r.EncodeBool(data.(bool))
 		case float32:
-			return r.encodeFloat32(data.(float32))
+			return r.EncodeFloat32(data.(float32))
 		case float64:
-			return r.encodeFloat64(data.(float64))
+			return r.EncodeFloat64(data.(float64))
 		case []byte:
-			return r.encodeBytes(data.([]byte))
+			return r.EncodeBytes(data.([]byte))
 		case string:
-			return r.encodeBytes([]byte(data.(string)))
+			return r.EncodeBytes([]byte(data.(string)))
 		case int8:
-			return r.encodeInt8(data.(int8))`
+			return r.EncodeInt8(data.(int8))`
 // template block ends
 
 var (
@@ -86,33 +86,33 @@ func init() {
 func signedGenerate(t string, bitsize int) {
 	// all signed ints can be checked against this nibble range
 	fmt.Println(`		if math.MinInt8 <= x && x <= math.MaxInt8 {
-			return r.encodeInt8(int8(x))
+			return r.EncodeInt8(int8(x))
 		}`)
 
 	if bitsize == 15 {
-		fmt.Println(`		return r.encodeInt16(int16(x))`)
+		fmt.Println(`		return r.EncodeInt16(int16(x))`)
 		return
 	}
 
 	if bitsize >= 15 {
 				fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
-				return r.encodeInt16(int16(x))
+				return r.EncodeInt16(int16(x))
 		}`)
 	}
 
 	if bitsize == 31 {
-		fmt.Println(`		return r.encodeInt32(int32(x))`)
+		fmt.Println(`		return r.EncodeInt32(int32(x))`)
 		return
 	}
 
 	if bitsize >= 31 {
 				fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
-				return r.encodeInt32(int32(x))
+				return r.EncodeInt32(int32(x))
 		}`)
 	}
 
 	if bitsize == 63 {
-		fmt.Println(`		return r.encodeInt64(int64(x))`)
+		fmt.Println(`		return r.EncodeInt64(int64(x))`)
 		return
 	}
 
@@ -122,24 +122,24 @@ func signedGenerate(t string, bitsize int) {
 func unsignedGenerate(t string, bitsize int) {
 	// all unsigned ints can be checked against this nibble range
 	fmt.Println(`		if x <= math.MaxInt8 {
-			return r.encodeInt8(int8(x))
+			return r.EncodeInt8(int8(x))
 		}`)
 		
 	if bitsize >= 16 {
 				fmt.Println(`		if x <= math.MaxInt16 {
-			return r.encodeInt16(int16(x))
+			return r.EncodeInt16(int16(x))
 		}`)
 	}
 	
 	if bitsize >= 32 {
 		fmt.Println(`		if x <= math.MaxInt32 {
-			return r.encodeInt32(int32(x))
+			return r.EncodeInt32(int32(x))
 		}`)
 		return
 	}
 	
 	if bitsize == 63 {
-		fmt.Println(`		return r.encodeInt64(int64(x))`)
+		fmt.Println(`		return r.EncodeInt64(int64(x))`)
 		return
 	}
 }
@@ -170,7 +170,7 @@ func main() {
 			if len(s) > MAX_INT_LENGTH {
 				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 			}
-			return r.encodeBigNumber(s)`)
+			return r.EncodeBigNumber(s)`)
 	
 	// support lists of all supported types
 	for _, t := range supportedListTypes {
@@ -182,7 +182,7 @@ func main() {
 					return err
 				}
 				for _, v := range x {
-					err = r.encode(v)
+					err = r.Encode(v)
 					if err != nil {
 						return err
 					}
@@ -195,7 +195,7 @@ func main() {
 			}
 
 			for _, v := range x {
-				err = r.encode(v)
+				err = r.Encode(v)
 				if err != nil {
 					return err
 				}
@@ -205,6 +205,56 @@ func main() {
 			return err` + "\n", t, t)
 	}
 	
+	// re-add byte to supported map types
+	supportedListTypes = append(supportedListTypes, "byte")
+	
+	// support maps of all supported types
+	for _, keyType := range supportedListTypes {
+		for _, valueType := range supportedListTypes {
+			for _, listOrNot := range []string{"", "[]"} {
+					mapType := fmt.Sprintf("map[%s]%s%s", keyType, listOrNot, valueType)
+					// generate the map type matching case
+					fmt.Printf(`		case %s:
+						x := data.(%s)
+						if len(x) < DICT_FIXED_COUNT {
+							_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + len(x))})
+							if err != nil {
+								return err
+							}
+							for k, v := range x {
+								err = r.Encode(k)
+								if err != nil {
+									return err
+								}
+								err = r.Encode(v)
+								if err != nil {
+									return err
+								}
+							}
+							return nil
+						}
+						_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
+						if err != nil {
+							return err
+						}
+
+						for k, v := range x {
+							err = r.Encode(k)
+							if err != nil {
+								return err
+							}
+							err = r.Encode(v)
+							if err != nil {
+								return err
+							}
+						}
+
+						_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+						return err` + "\n", mapType, mapType)
+			}
+		}
+	}
+		
 	// tail default case
 	fmt.Println(`default:
 		return fmt.Errorf("could not encode data of type %T", data)

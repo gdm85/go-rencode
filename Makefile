@@ -1,10 +1,8 @@
-.DEFAULT := tests
-.PHONY := tests pregen
+.DEFAULT: tests
+.PHONY: tests
 
-tests: pregen
+tests: rencode_generated.go
 	go test
 
-
-pregen:
-	rm -f rencode_generated.go
-	go generate
+rencode_generated.go:
+	go generate > rencode_generated.go
