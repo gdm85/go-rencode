@@ -40,7 +40,12 @@ func (r *Encoder) Encode(data interface{}) error {
 	}
 	switch data.(type) {
 		case big.Int:
-			panic("big.Int not yet supported")
+			x := data.(big.Int)
+			s := x.String()
+			if len(s) > MAX_INT_LENGTH {
+				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
+			}
+			return r.EncodeBigNumber(s)
 		case bool:
 			return r.EncodeBool(data.(bool))
 		case float32:

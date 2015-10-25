@@ -110,8 +110,8 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 			return
 		}
 
-		i := new(big.Int)
-		_, err = fmt.Sscan(string(collected), i)
+		var i big.Int
+		_, err = fmt.Sscan(string(collected), &i)
 		if err != nil {
 			return
 		}
@@ -149,7 +149,7 @@ func (r *Decoder) DecodeNext() (v interface{}, err error) {
 			return
 		}
 		if STR_FIXED_START <= typeCode && typeCode < STR_FIXED_START+STR_FIXED_COUNT {
-			b := typeCode - STR_FIXED_START + 1
+			b := typeCode - STR_FIXED_START
 			data := make([]byte, b)
 
 			_, err = r.r.Read(data)
