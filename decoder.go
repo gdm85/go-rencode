@@ -72,7 +72,8 @@ func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
 	return
 }
 
-// DecodeNext returns the next available object stored in the rencode stream
+// DecodeNext returns the next available object stored in the rencode stream.
+// If no more objects are available, an io.EOF error will be returned.
 func (r *Decoder) DecodeNext() (interface{}, error) {
 	typeCode, err := r.readByte()
 	if err != nil {
