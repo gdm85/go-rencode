@@ -31,13 +31,16 @@ const top = `package rencode
 import (
 	"fmt"
 	"math"
+	"math/big"
 )
 
-func (r *Rencode) Encode(data interface{}) error {
+func (r *Encoder) Encode(data interface{}) error {
 	if data == nil {
 		return r.EncodeNone()
 	}
 	switch data.(type) {
+		case big.Int:
+			panic("big.Int not yet supported")
 		case bool:
 			return r.EncodeBool(data.(bool))
 		case float32:
@@ -208,6 +211,7 @@ func main() {
 	// re-add byte to supported map types
 	supportedListTypes = append(supportedListTypes, "byte")
 	
+	if 1 == 2 {
 	// support maps of all supported types
 	for _, keyType := range supportedListTypes {
 		for _, valueType := range supportedListTypes {
@@ -254,6 +258,7 @@ func main() {
 			}
 		}
 	}
+} // temporarily disable maps because of huge source (13k)
 		
 	// tail default case
 	fmt.Println(`default:
