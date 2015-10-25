@@ -76,7 +76,7 @@ func (r *Encoder) Encode(data interface{}) error {
 	case List:
 		x := data.(List)
 		if x.Length() < LIST_FIXED_COUNT {
-			_, err := r.buffer.Write([]byte{byte(LIST_FIXED_START + x.Length())})
+			_, err := r.w.Write([]byte{byte(LIST_FIXED_START + x.Length())})
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func (r *Encoder) Encode(data interface{}) error {
 			}
 			return nil
 		}
-		_, err := r.buffer.Write([]byte{byte(CHR_LIST)})
+		_, err := r.w.Write([]byte{byte(CHR_LIST)})
 		if err != nil {
 			return err
 		}
@@ -100,12 +100,12 @@ func (r *Encoder) Encode(data interface{}) error {
 			}
 		}
 
-		_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case Dictionary:
 		x := data.(Dictionary)
 		if x.Length() < DICT_FIXED_COUNT {
-			_, err := r.buffer.Write([]byte{byte(DICT_FIXED_START + x.Length())})
+			_, err := r.w.Write([]byte{byte(DICT_FIXED_START + x.Length())})
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func (r *Encoder) Encode(data interface{}) error {
 			}
 			return nil
 		}
-		_, err := r.buffer.Write([]byte{byte(CHR_DICT)})
+		_, err := r.w.Write([]byte{byte(CHR_DICT)})
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ func (r *Encoder) Encode(data interface{}) error {
 			}
 		}
 
-		_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
+		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case bool:
 		return r.EncodeBool(data.(bool))

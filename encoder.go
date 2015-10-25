@@ -22,9 +22,9 @@ package rencode
 //go:generate go run --tags=generate generate.go
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 )
 
 // Constants as defined in https://github.com/aresch/rencode/blob/master/rencode/rencode.pyx
@@ -64,26 +64,26 @@ const (
 
 // Encoder implements a rencode encoder
 type Encoder struct {
-	buffer bytes.Buffer
+	w io.Writer
 }
 
-// Bytes returns the bytes of the underlying bytes buffer
-func (r *Encoder) Bytes() []byte {
-	return r.buffer.Bytes()
+// NewEncoder returns a rencode encoder that writes on specified Writer
+func NewEncoder(w io.Writer) Encoder {
+	return Encoder{w}
 }
 
 // EncodeInt8 encodes an int8 value
 func (r *Encoder) EncodeInt8(x int8) error {
 	if 0 <= x && x < INT_POS_FIXED_COUNT {
-		_, err := r.buffer.Write([]byte{byte(INT_POS_FIXED_START + x)})
+		_, err := r.w.Write([]byte{byte(INT_POS_FIXED_START + x)})
 		return err
 	}
 	if -INT_NEG_FIXED_COUNT <= x && x < 0 {
-		_, err := r.buffer.Write([]byte{byte(INT_NEG_FIXED_START - 1 - x)})
+		_, err := r.w.Write([]byte{byte(INT_NEG_FIXED_START - 1 - x)})
 		return err
 	}
 	if -128 < x && x <= 127 {
-		_, err := r.buffer.Write([]byte{CHR_INT1, byte(x)})
+		_, err := r.w.Write([]byte{CHR_INT1, byte(x)})
 		return err
 	}
 	panic("impossible just happened")
@@ -98,93 +98,93 @@ func (r *Encoder) EncodeBool(b bool) error {
 		data = CHR_FALSE
 	}
 
-	_, err := r.buffer.Write([]byte{data})
+	_, err := r.w.Write([]byte{data})
 	return err
 }
 
 // EncodeInt16 encodes an int16 value
 func (r *Encoder) EncodeInt16(x int16) error {
-	_, err := r.buffer.Write([]byte{CHR_INT2})
+	_, err := r.w.Write([]byte{CHR_INT2})
 	if err != nil {
 		return err
 	}
-	return binary.Write(&r.buffer, binary.BigEndian, x)
+	return binary.Write(r.w, binary.BigEndian, x)
 }
 
 // EncodeInt32 encodes an int32 value
 func (r *Encoder) EncodeInt32(x int32) error {
-	_, err := r.buffer.Write([]byte{CHR_INT4})
+	_, err := r.w.Write([]byte{CHR_INT4})
 	if err != nil {
 		return err
 	}
-	return binary.Write(&r.buffer, binary.BigEndian, x)
+	return binary.Write(r.w, binary.BigEndian, x)
 }
 
 // EncodeInt64 encodes an int64 value
 func (r *Encoder) EncodeInt64(x int64) error {
-	_, err := r.buffer.Write([]byte{CHR_INT8})
+	_, err := r.w.Write([]byte{CHR_INT8})
 	if err != nil {
 		return err
 	}
-	return binary.Write(&r.buffer, binary.BigEndian, x)
+	return binary.Write(r.w, binary.BigEndian, x)
 }
 
 // EncodeBigNumber encodes a big number (> 2^64)
 func (r *Encoder) EncodeBigNumber(s string) error {
-	_, err := r.buffer.Write([]byte{CHR_INT})
+	_, err := r.w.Write([]byte{CHR_INT})
 	if err != nil {
 		return err
 	}
-	_, err = r.buffer.Write([]byte(s))
+	_, err = r.w.Write([]byte(s))
 	if err != nil {
 		return err
 	}
-	_, err = r.buffer.Write([]byte{CHR_TERM})
+	_, err = r.w.Write([]byte{CHR_TERM})
 	return err
 }
 
 // EncodeNone encodes a nil value without any type information
 func (r *Encoder) EncodeNone() error {
-	_, err := r.buffer.Write([]byte{CHR_NONE})
+	_, err := r.w.Write([]byte{CHR_NONE})
 	return err
 }
 
 // EncodeBytes encodes a byte slice; all strings should be encoded as byte slices
 func (r *Encoder) EncodeBytes(b []byte) error {
 	if len(b) < STR_FIXED_COUNT {
-		_, err := r.buffer.Write([]byte{byte(STR_FIXED_START + len(b))})
+		_, err := r.w.Write([]byte{byte(STR_FIXED_START + len(b))})
 		if err != nil {
 			return err
 		}
-		_, err = r.buffer.Write(b)
+		_, err = r.w.Write(b)
 		return err
 	}
 
 	prefix := []byte(fmt.Sprintf("%d:", len(b)))
 
-	_, err := r.buffer.Write(prefix)
+	_, err := r.w.Write(prefix)
 	if err != nil {
 		return err
 	}
 
-	_, err = r.buffer.Write(b)
+	_, err = r.w.Write(b)
 	return err
 }
 
 // EncodeFloat32 encodes a float32 value
 func (r *Encoder) EncodeFloat32(f float32) error {
-	_, err := r.buffer.Write([]byte{CHR_FLOAT32})
+	_, err := r.w.Write([]byte{CHR_FLOAT32})
 	if err != nil {
 		return err
 	}
-	return binary.Write(&r.buffer, binary.BigEndian, f)
+	return binary.Write(r.w, binary.BigEndian, f)
 }
 
 // EncodeFloat64 encodes an float64 value
 func (r *Encoder) EncodeFloat64(f float64) error {
-	_, err := r.buffer.Write([]byte{CHR_FLOAT64})
+	_, err := r.w.Write([]byte{CHR_FLOAT64})
 	if err != nil {
 		return err
 	}
-	return binary.Write(&r.buffer, binary.BigEndian, f)
+	return binary.Write(r.w, binary.BigEndian, f)
 }
