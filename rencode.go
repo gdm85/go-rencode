@@ -176,16 +176,6 @@ func (r *Rencode) encodeFloat64(f float64) error {
 /*
 cdef encode(char **buf, unsigned int *pos, data):
     t = type(data)
-    elif t == float:
-        if _float_bits == 32:
-            encode_float32(buf, pos, data)
-        elif _float_bits == 64:
-            encode_float64(buf, pos, data)
-        else:
-            raise ValueError('Float bits (%d) is not 32 or 64' % _float_bits)
-
-    elif t == bool:
-        encode_bool(buf, pos, data)
 
     elif t == list or t == tuple:
         encode_list(buf, pos, data)
