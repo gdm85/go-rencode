@@ -28,37 +28,37 @@ import (
 )
 
 const (
-    DEFAULT_FLOAT_BITS = 32 // Default number of bits for serialized floats, either 32 or 64 (also a parameter for dumps()).
-    MAX_INT_LENGTH = 64 // Maximum length of integer when written as base 10 string.
-    // The bencode 'typecodes' such as i, d, etc have been extended and relocated on the base-256 character set.
-    CHR_LIST    = 59
-    CHR_DICT    = 60
-    CHR_INT     = 61
-    CHR_INT1    = 62
-    CHR_INT2    = 63
-    CHR_INT4    = 64
-    CHR_INT8    = 65
-    CHR_FLOAT32 = 66
-    CHR_FLOAT64 = 44
-    CHR_TRUE    = 67
-    CHR_FALSE   = 68
-    CHR_NONE    = 69
-    CHR_TERM    = 127
-    // Positive integers with value embedded in typecode.
-    INT_POS_FIXED_START = 0
-    INT_POS_FIXED_COUNT = 44
-    // Dictionaries with length embedded in typecode.
-    DICT_FIXED_START = 102
-    DICT_FIXED_COUNT = 25
-    // Negative integers with value embedded in typecode.
-    INT_NEG_FIXED_START = 70
-    INT_NEG_FIXED_COUNT = 32
-    // Strings with length embedded in typecode.
-    STR_FIXED_START = 128
-    STR_FIXED_COUNT = 64
-    // Lists with length embedded in typecode.
-    LIST_FIXED_START = STR_FIXED_START+STR_FIXED_COUNT
-    LIST_FIXED_COUNT = 64
+	DEFAULT_FLOAT_BITS = 32 // Default number of bits for serialized floats, either 32 or 64 (also a parameter for dumps()).
+	MAX_INT_LENGTH     = 64 // Maximum length of integer when written as base 10 string.
+	// The bencode 'typecodes' such as i, d, etc have been extended and relocated on the base-256 character set.
+	CHR_LIST    = 59
+	CHR_DICT    = 60
+	CHR_INT     = 61
+	CHR_INT1    = 62
+	CHR_INT2    = 63
+	CHR_INT4    = 64
+	CHR_INT8    = 65
+	CHR_FLOAT32 = 66
+	CHR_FLOAT64 = 44
+	CHR_TRUE    = 67
+	CHR_FALSE   = 68
+	CHR_NONE    = 69
+	CHR_TERM    = 127
+	// Positive integers with value embedded in typecode.
+	INT_POS_FIXED_START = 0
+	INT_POS_FIXED_COUNT = 44
+	// Dictionaries with length embedded in typecode.
+	DICT_FIXED_START = 102
+	DICT_FIXED_COUNT = 25
+	// Negative integers with value embedded in typecode.
+	INT_NEG_FIXED_START = 70
+	INT_NEG_FIXED_COUNT = 32
+	// Strings with length embedded in typecode.
+	STR_FIXED_START = 128
+	STR_FIXED_COUNT = 64
+	// Lists with length embedded in typecode.
+	LIST_FIXED_START = STR_FIXED_START + STR_FIXED_COUNT
+	LIST_FIXED_COUNT = 64
 )
 
 type Encoder struct {
@@ -66,7 +66,7 @@ type Encoder struct {
 }
 
 func (r *Encoder) EncodeInt8(x int8) error {
-	if x >=0 && x < INT_POS_FIXED_COUNT {
+	if x >= 0 && x < INT_POS_FIXED_COUNT {
 		_, err := r.buffer.Write([]byte{byte(INT_POS_FIXED_START + x)})
 		return err
 	}
@@ -142,18 +142,18 @@ func (r *Encoder) EncodeBytes(b []byte) error {
 			return err
 		}
 		_, err = r.buffer.Write(b)
-		return err		
+		return err
 	}
-	
+
 	prefix := []byte(fmt.Sprintf("%d:", len(b)))
-	
+
 	_, err := r.buffer.Write(prefix)
 	if err != nil {
 		return err
 	}
 
 	_, err = r.buffer.Write(b)
-	return err		
+	return err
 }
 
 func (r *Encoder) EncodeFloat32(f float32) error {

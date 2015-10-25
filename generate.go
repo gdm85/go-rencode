@@ -53,29 +53,30 @@ func (r *Encoder) Encode(data interface{}) error {
 			return r.EncodeBytes([]byte(data.(string)))
 		case int8:
 			return r.EncodeInt8(data.(int8))`
+
 // template block ends
 
 var (
-	intTypes map[string]int
-	supportedListTypes = []string{"bool", "float32", "float64", "string", "int8" }
+	intTypes           map[string]int
+	supportedListTypes = []string{"bool", "float32", "float64", "string", "int8"}
 )
 
 func init() {
-	intTypes = map[string]int{"uint8": 8, "uint16":16,"int16":15,"uint32":32, "int32":31,"int64":63,} // NOTE: uint64 is not supported as it can overflow int64
-	
+	intTypes = map[string]int{"uint8": 8, "uint16": 16, "int16": 15, "uint32": 32, "int32": 31, "int64": 63} // NOTE: uint64 is not supported as it can overflow int64
+
 	if ^uint(0) == uint(^uint32(0)) {
 		intTypes["uint"] = 32
 		intTypes["int"] = 31
 	} else if ^uint(0) == uint(^uint64(0)) {
 		// same here, 'uint' is not being defined on purpose
 		intTypes["int"] = 63
-		
+
 		// add now to supported list types, since it's not referenced in intTypes map
 		supportedListTypes = append(supportedListTypes, "uint")
 	} else {
 		panic("unrecognized default uint bitsize")
 	}
-	
+
 	// add integer types to supported list types
 	for k, _ := range intTypes {
 		// array of uint8 == array of byte, do not support as lists
@@ -98,7 +99,7 @@ func signedGenerate(t string, bitsize int) {
 	}
 
 	if bitsize >= 15 {
-				fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
+		fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
 				return r.EncodeInt16(int16(x))
 		}`)
 	}
@@ -109,7 +110,7 @@ func signedGenerate(t string, bitsize int) {
 	}
 
 	if bitsize >= 31 {
-				fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
+		fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
 				return r.EncodeInt32(int32(x))
 		}`)
 	}
@@ -127,20 +128,20 @@ func unsignedGenerate(t string, bitsize int) {
 	fmt.Println(`		if x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}`)
-		
+
 	if bitsize >= 16 {
-				fmt.Println(`		if x <= math.MaxInt16 {
+		fmt.Println(`		if x <= math.MaxInt16 {
 			return r.EncodeInt16(int16(x))
 		}`)
 	}
-	
+
 	if bitsize >= 32 {
 		fmt.Println(`		if x <= math.MaxInt32 {
 			return r.EncodeInt32(int32(x))
 		}`)
 		return
 	}
-	
+
 	if bitsize == 63 {
 		fmt.Println(`		return r.EncodeInt64(int64(x))`)
 		return
@@ -149,12 +150,12 @@ func unsignedGenerate(t string, bitsize int) {
 
 func main() {
 	fmt.Println(top)
-	
+
 	for t, bitsize := range intTypes {
 		fmt.Printf(`	case %s:
-		x := data.(%s)` + "\n", t, t)
-			
-		if bitsize % 2 == 0 {
+		x := data.(%s)`+"\n", t, t)
+
+		if bitsize%2 == 0 {
 			// unsigned integer of some bitsize
 			unsignedGenerate(t, bitsize)
 		} else {
@@ -162,7 +163,7 @@ func main() {
 			signedGenerate(t, bitsize)
 		}
 	}
-	
+
 	// encoding for 'big numbers'
 	caseStr := "uint64"
 	if _, ok := intTypes["uint"]; !ok {
@@ -174,7 +175,7 @@ func main() {
 				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 			}
 			return r.EncodeBigNumber(s)`)
-	
+
 	// support lists of all supported types
 	for _, t := range supportedListTypes {
 		fmt.Printf(`		case []%s:
@@ -205,17 +206,17 @@ func main() {
 			}
 
 			_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
-			return err` + "\n", t, t)
+			return err`+"\n", t, t)
 	}
-	
+
 	// re-add byte to supported map types
 	supportedListTypes = append(supportedListTypes, "byte")
-	
+
 	if 1 == 2 {
-	// support maps of all supported types
-	for _, keyType := range supportedListTypes {
-		for _, valueType := range supportedListTypes {
-			for _, listOrNot := range []string{"", "[]"} {
+		// support maps of all supported types
+		for _, keyType := range supportedListTypes {
+			for _, valueType := range supportedListTypes {
+				for _, listOrNot := range []string{"", "[]"} {
 					mapType := fmt.Sprintf("map[%s]%s%s", keyType, listOrNot, valueType)
 					// generate the map type matching case
 					fmt.Printf(`		case %s:
@@ -254,12 +255,12 @@ func main() {
 						}
 
 						_, err = r.buffer.Write([]byte{byte(CHR_TERM)})
-						return err` + "\n", mapType, mapType)
+						return err`+"\n", mapType, mapType)
+				}
 			}
 		}
-	}
-} // temporarily disable maps because of huge source (13k)
-		
+	} // temporarily disable maps because of huge source (13k)
+
 	// tail default case
 	fmt.Println(`default:
 		return fmt.Errorf("could not encode data of type %T", data)
