@@ -23,6 +23,8 @@ package rencode
 
 import (
 	"bytes"
+	"encoding/binary"
+	"fmt"
 )
 
 const (
@@ -79,38 +81,101 @@ func (r *Rencode) encodeInt8(x int8) error {
 	panic("impossible just happened")
 }
 
-/*cdef encode_char(char **buf, unsigned int *pos, signed char x):
-    if 0 <= x < INT_POS_FIXED_COUNT:
-        write_buffer_char(buf, pos, INT_POS_FIXED_START + x)
-    elif -INT_NEG_FIXED_COUNT <= x < 0:
-        write_buffer_char(buf, pos, INT_NEG_FIXED_START - 1 - x)
-    elif -128 <= x < 128:
-        write_buffer_char(buf, pos, CHR_INT1)
-        write_buffer_char(buf, pos, x)*/
-        
+func (r *Rencode) encodeBool(b bool) error {
+	var data byte
+	if b {
+		data = CHR_TRUE
+	} else {
+		data = CHR_FALSE
+	}
 
+	_, err := r.buffer.Write([]byte{data})
+	return err
+}
 
+func (r *Rencode) encodeInt16(x int16) error {
+	_, err := r.buffer.Write([]byte{CHR_INT2})
+	if err != nil {
+		return err
+	}
+	return binary.Write(&r.buffer, binary.BigEndian, x)
+}
+
+func (r *Rencode) encodeInt32(x int32) error {
+	_, err := r.buffer.Write([]byte{CHR_INT4})
+	if err != nil {
+		return err
+	}
+	return binary.Write(&r.buffer, binary.BigEndian, x)
+}
+
+func (r *Rencode) encodeInt64(x int64) error {
+	_, err := r.buffer.Write([]byte{CHR_INT8})
+	if err != nil {
+		return err
+	}
+	return binary.Write(&r.buffer, binary.BigEndian, x)
+}
+
+func (r *Rencode) encodeBigNumber(s string) error {
+	_, err := r.buffer.Write([]byte{CHR_INT})
+	if err != nil {
+		return err
+	}
+	_, err = r.buffer.Write([]byte(s))
+	if err != nil {
+		return err
+	}
+	_, err = r.buffer.Write([]byte{CHR_TERM})
+	return err
+}
+
+func (r *Rencode) encodeNone() error {
+	_, err := r.buffer.Write([]byte{CHR_NONE})
+	return err
+}
+
+func (r *Rencode) encodeBytes(b []byte) error {
+	if len(b) < STR_FIXED_COUNT {
+		_, err := r.buffer.Write([]byte{byte(STR_FIXED_START + len(b))})
+		if err != nil {
+			return err
+		}
+		_, err = r.buffer.Write(b)
+		return err		
+	}
+	
+	prefix := []byte(fmt.Sprintf("%d:", len(b)))
+	
+	_, err := r.buffer.Write(prefix)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.buffer.Write(b)
+	return err		
+}
+
+func (r *Rencode) encodeFloat32(f float32) error {
+	_, err := r.buffer.Write([]byte{CHR_FLOAT32})
+	if err != nil {
+		return err
+	}
+	return binary.Write(&r.buffer, binary.BigEndian, f)
+}
+
+func (r *Rencode) encodeFloat64(f float64) error {
+	_, err := r.buffer.Write([]byte{CHR_FLOAT64})
+	if err != nil {
+		return err
+	}
+	return binary.Write(&r.buffer, binary.BigEndian, f)
+}
 
 
 /*
 cdef encode(char **buf, unsigned int *pos, data):
     t = type(data)
-    if t == int or t == long:
-        if -128 <= data < 128:
-            encode_char(buf, pos, data)
-        elif -32768 <= data < 32768:
-            encode_short(buf, pos, data)
-        elif MIN_SIGNED_INT <= data < MAX_SIGNED_INT:
-            encode_int(buf, pos, data)
-        elif MIN_SIGNED_LONGLONG <= data < MAX_SIGNED_LONGLONG:
-            encode_long_long(buf, pos, data)
-        else:
-            s = str(data)
-            if py3:
-                s = s.encode("ascii")
-            if len(s) >= MAX_INT_LENGTH:
-                raise ValueError("Number is longer than %d characters" % MAX_INT_LENGTH)
-            encode_big_number(buf, pos, s)
     elif t == float:
         if _float_bits == 32:
             encode_float32(buf, pos, data)
@@ -118,16 +183,6 @@ cdef encode(char **buf, unsigned int *pos, data):
             encode_float64(buf, pos, data)
         else:
             raise ValueError('Float bits (%d) is not 32 or 64' % _float_bits)
-
-    elif t == bytes:
-        encode_str(buf, pos, data)
-
-    elif t == unicode:
-        u = data.encode("utf8")
-        encode_str(buf, pos, u)
-
-    elif t == type(None):
-        encode_none(buf, pos)
 
     elif t == bool:
         encode_bool(buf, pos, data)

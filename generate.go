@@ -25,45 +25,143 @@ import (
 	"fmt"
 )
 
+// template block starts
 const top = `package rencode
 
-func (r *Rencode) encode(data interface{}) error {
-	switch data.(type) {
-		case int8:
-			return r.encodeChar(data.(int8))`
+import (
+	"fmt"
+	"math"
+)
 
-/*		case int:
-			if -128 <= data.(int) && data.(int) < 128 {
-				return r.encodeChar(int8(data.(int)))
-			}
-		case int16:
-		case int32:
-		case int64:
-		case uint:
-		case uint8:
-		case uint16:
-		case uint32:
-		case uint64:
-			
-		default:
+func (r *Rencode) encode(data interface{}) error {
+	if data == nil {
+		return r.encodeNone()
+	}
+	switch data.(type) {
+		case bool:
+			return r.encodeBool(data.(bool))
+		case float32:
+			return r.encodeFloat32(data.(float32))
+		case float64:
+			return r.encodeFloat64(data.(float64))
+		case []byte:
+			return r.encodeBytes(data.([]byte))
+		case string:
+			return r.encodeBytes([]byte(data.(string)))
+		case int8:
+			return r.encodeInt8(data.(int8))`
+// template block ends
+
+var intTypes map[string]int
+
+func init() {
+	intTypes = map[string]int{"uint8": 8, "uint16":16,"int16":15,"uint32":32, "int32":31,"int64":63,} // NOTE: uint64 is not supported as it can overflow int64
+	
+	if ^uint(0) == uint(^uint32(0)) {
+		intTypes["uint"] = 32
+		intTypes["int"] = 31
+	} else if ^uint(0) == uint(^uint64(0)) {
+		// same here, 'uint' is not being defined on purpose
+		intTypes["int"] = 63
+	} else {
+		panic("unrecognized default uint bitsize")
 	}
 }
-* */
 
-var sigintTypes = []string{"int", "int16", "int32", "int64"}
+func signedGenerate(t string, bitsize int) {
+	// all signed ints can be checked against this nibble range
+	fmt.Println(`		if math.MinInt8 <= x && x <= math.MaxInt8 {
+			return r.encodeInt8(int8(x))
+		}`)
+
+	if bitsize == 15 {
+		fmt.Println(`		return r.encodeInt16(int16(x))`)
+		return
+	}
+
+	if bitsize >= 15 {
+				fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
+				return r.encodeInt16(int16(x))
+		}`)
+	}
+
+	if bitsize == 31 {
+		fmt.Println(`		return r.encodeInt32(int32(x))`)
+		return
+	}
+
+	if bitsize >= 31 {
+				fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
+				return r.encodeInt32(int32(x))
+		}`)
+	}
+
+	if bitsize == 63 {
+		fmt.Println(`		return r.encodeInt64(int64(x))`)
+		return
+	}
+
+	panic("signed: using bitsize larger than 64")
+}
+
+func unsignedGenerate(t string, bitsize int) {
+	// all unsigned ints can be checked against this nibble range
+	fmt.Println(`		if x <= math.MaxInt8 {
+			return r.encodeInt8(int8(x))
+		}`)
+		
+	if bitsize >= 16 {
+				fmt.Println(`		if x <= math.MaxInt16 {
+			return r.encodeInt16(int16(x))
+		}`)
+	}
+	
+	if bitsize >= 32 {
+		fmt.Println(`		if x <= math.MaxInt32 {
+			return r.encodeInt32(int32(x))
+		}`)
+		return
+	}
+	
+	if bitsize == 63 {
+		fmt.Println(`		return r.encodeInt64(int64(x))`)
+		return
+	}
+}
 
 func main() {
 	fmt.Println(top)
 	
-	for _, t := range sigintTypes {
-		fmt.Printf("\tcase %s:\n", t)
-		fmt.Printf(`			if -128 <= data.(%s) && data.(%s) < 128 {
-				return r.encodeInt8(int8(data.(%s)))
-			}` + "\n", t, t, t)
+	for t, bitsize := range intTypes {
+		fmt.Printf(`	case %s:
+		x := data.(%s)` + "\n", t, t)
+			
+		if bitsize % 2 == 0 {
+			// unsigned integer of some bitsize
+			unsignedGenerate(t, bitsize)
+		} else {
+			// signed integer of some bitsize
+			signedGenerate(t, bitsize)
+		}
 	}
 	
+	// encoding for 'big numbers'
+	caseStr := "uint64"
+	if _, ok := intTypes["uint"]; !ok {
+		caseStr += ", uint"
+	}
+	fmt.Printf("\t\tcase %s:\n", caseStr)
+	fmt.Println(`			s := fmt.Sprintf("%d", data)
+			if len(s) > MAX_INT_LENGTH {
+				return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
+			}
+			return r.encodeBigNumber(s)`)
+			
+	
+	// tail default case
 	fmt.Println(`default:
 		return fmt.Errorf("could not encode data of type %T", data)
 	}
+	panic("unexpected fallthrough")
 }`)
 }
