@@ -530,13 +530,17 @@ func TestDecodeFixedDict(t *testing.T) {
 func TestDecodeDictionary(t *testing.T) {
 	var dict Dictionary
 	var nestedDict Dictionary
+	var nestedList List
 
 	nestedDict.Add("abcdefghijk", int16(1234))
 	nestedDict.Add(false, []byte("bäz"))
+	nestedList.Add(true)
+	nestedList.Add("carrot")
 
 	for i := 0; i < 120; i++ {
 		dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
 		dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
+		dict.Add(fmt.Sprintf("z %d", i), nestedList)
 	}
 
 	e := Encoder{}
@@ -573,10 +577,33 @@ func TestDecodeDictionary(t *testing.T) {
 			if !d1.Compare(&d2) {
 				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
 			}
+		case List:
+			l1 := v.(List)
+			l2 := fv.(List)
+			if !l1.Compare(&l2) {
+				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			}
 		default:
 			if v != fv {
 				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
 			}
 		}
+	}
+
+	// check that we have a carrot in one of the nested list values
+	v, err := f.Get("z 10")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	l := v.(List)
+
+	fv, err := l.Get(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(fv.([]byte)) != "carrot" {
+		t.Fatal("carrot not found")
 	}
 }
