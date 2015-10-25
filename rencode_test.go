@@ -489,12 +489,18 @@ func TestDecodeList(t *testing.T) {
 func TestDecodeFixedDict(t *testing.T) {
 	var dict Dictionary
 
-	dict.Add("abcdefghijk", int16(1234))
-	dict.Add(false, []byte("bäz"))
+	err := dict.Add("abcdefghijk", int16(1234))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = dict.Add(false, []byte("bäz"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	e := Encoder{}
 
-	err := e.Encode(dict)
+	err = e.Encode(dict)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -533,20 +539,35 @@ func TestDecodeDictionary(t *testing.T) {
 	var nestedDict Dictionary
 	var nestedList List
 
-	nestedDict.Add("abcdefghijk", int16(1234))
-	nestedDict.Add(false, []byte("bäz"))
+	err := nestedDict.Add("abcdefghijk", int16(1234))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = nestedDict.Add(false, []byte("bäz"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	nestedList.Add(true)
 	nestedList.Add("carrot")
 
 	for i := 0; i < 120; i++ {
-		dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
-		dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
-		dict.Add(fmt.Sprintf("z %d", i), nestedList)
+		err = dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = dict.Add(fmt.Sprintf("z %d", i), nestedList)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	e := Encoder{}
 
-	err := e.Encode(dict)
+	err = e.Encode(dict)
 	if err != nil {
 		t.Fatal(err)
 	}
