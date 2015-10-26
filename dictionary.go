@@ -30,13 +30,23 @@ var (
 
 // Dictionary is a rencode-specific dictionary that allows any type of key to be mapped to any type of value
 type Dictionary struct {
-	List
-	keys []interface{}
+	values []interface{}
+	keys   []interface{}
+}
+
+// Length returns the total count of elements
+func (d *Dictionary) Length() int {
+	return len(d.values)
 }
 
 // Keys returns all defined keys
 func (d *Dictionary) Keys() []interface{} {
 	return d.keys
+}
+
+// Values returns all stored values
+func (d *Dictionary) Values() []interface{} {
+	return d.values
 }
 
 // Get returns the value stored for the matching key.
