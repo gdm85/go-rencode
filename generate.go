@@ -23,6 +23,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 // template block starts
@@ -152,7 +153,10 @@ var (
 )
 
 func init() {
-	intTypes = map[string]int{"uint8": 8, "uint16": 16, "int16": 15, "uint32": 32, "int32": 31, "int64": 63} // NOTE: uint64 is not supported as it can overflow int64
+	// NOTE: uint64 is not supported as it can overflow int64, which is
+	// the maximum regular integer type for the original Python rencode
+	// For values which require more bits than int64, use big.Int
+	intTypes = map[string]int{"uint8": 8, "uint16": 16, "int16": 15, "uint32": 32, "int32": 31, "int64": 63}
 
 	if ^uint(0) == uint(^uint32(0)) {
 		intTypes["uint"] = 32
@@ -178,7 +182,7 @@ func signedGenerate(t string, bitsize int) {
 
 	if bitsize >= 15 {
 		fmt.Println(`		if math.MinInt16 <= x && x <= math.MaxInt16 {
-		return r.EncodeInt16(int16(x))
+			return r.EncodeInt16(int16(x))
 		}`)
 	}
 
@@ -189,7 +193,7 @@ func signedGenerate(t string, bitsize int) {
 
 	if bitsize >= 31 {
 		fmt.Println(`		if math.MinInt32 <= x && x <= math.MaxInt32 {
-		return r.EncodeInt32(int32(x))
+			return r.EncodeInt32(int32(x))
 		}`)
 	}
 
@@ -260,4 +264,94 @@ func main() {
 	}
 	panic("unexpected fallthrough")
 }`)
+
+	// generate integer conversion function
+	fmt.Println(`func convertAssignInteger(src, dest interface{}) error {
+		switch src.(type) {
+			case big.Int:
+				switch dest.(type) {
+					case *big.Int:
+						d := dest.(*big.Int)
+						*d = src.(big.Int)
+						return nil
+				}`)
+
+	// add int8 to allowed types
+	intTypes["int8"] = 7
+
+	for st, sBitsize := range intTypes {
+		fmt.Printf(`		case %s:
+			s := src.(%s)
+			switch dest.(type) {
+			case *%s:
+				d := dest.(*%s)
+				*d = s
+				return nil`+"\n", st, st, st, st)
+		for dt, dBitsize := range intTypes {
+			if dt == st {
+				continue
+			}
+
+			sUnsigned := sBitsize%2 == 0
+			dUnsigned := dBitsize%2 == 0
+
+			// disallow conversions between signed/unsigned
+			// user should know if integer is signed/unsinged before scanning for it
+			if sUnsigned != dUnsigned {
+				continue
+			}
+
+			if sUnsigned {
+				unsignedConvertGenerate(st, sBitsize, dt, dBitsize)
+			} else {
+				signedConvertGenerate(st, sBitsize, dt, dBitsize)
+			}
+		}
+		fmt.Println(`		}`)
+	}
+
+	fmt.Println(`		}
+	return fmt.Errorf("cannot convert from %T into %T", src, dest)
+}`)
+
+}
+
+func getMaxValue(t string) string {
+	return fmt.Sprintf("math.Max%s%s", strings.ToUpper(fmt.Sprintf("%c", t[0])), t[1:])
+}
+
+func getMinValue(t string) string {
+	return fmt.Sprintf("math.Min%s%s", strings.ToUpper(fmt.Sprintf("%c", t[0])), t[1:])
+}
+
+func unsignedConvertGenerate(sourceType string, sourceBitsize int, destType string, destBitsize int) {
+	fmt.Printf(`		case *%s:
+			d := dest.(*%s)`+"\n", destType, destType)
+
+	// extra check in case of integer downsizing
+	if sourceBitsize > destBitsize {
+		fmt.Printf(`			if s > %s {
+				return ErrConversionOverflow
+			}`+"\n", getMaxValue(destType))
+	}
+
+	// assign with conversion
+	fmt.Printf(`			*d = %s(s)
+		return nil`+"\n", destType)
+}
+
+func signedConvertGenerate(sourceType string, sourceBitsize int, destType string, destBitsize int) {
+	fmt.Printf(`		case *%s:
+			d := dest.(*%s)`+"\n", destType, destType)
+
+	// extra check in case of integer downsizing
+	if sourceBitsize > destBitsize {
+		fmt.Printf(`			if s > %s || s < %s {
+				return ErrConversionOverflow
+			}`+"\n", getMaxValue(destType), getMinValue(destType))
+	}
+
+	// assign with conversion
+	fmt.Printf(`			*d = %s(s)
+			return nil`+"\n", destType)
 }
