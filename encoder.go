@@ -188,3 +188,23 @@ func (r *Encoder) EncodeFloat64(f float64) error {
 	}
 	return binary.Write(r.w, binary.BigEndian, f)
 }
+
+// Encode will ingest and encode multiple values of the following supported types:
+//  - big.Int
+//  - List
+//  - Dictionary
+//  - bool
+//  - float32, float64
+//  - []byte, string (all strings are stored as byte slices anyway)
+//  - int8, int16, int32, int64, int
+//  - uint8, uint16, uint32, uint64, uint
+func (r *Encoder) Encode(values ...interface{}) error {
+	for _, v := range values {
+		err := r.encodeSingle(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
