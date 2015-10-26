@@ -52,7 +52,7 @@ Only the following types are supported:
 ### Accessory types
 
 The `rencode.List` and `rencode.Dictionary` implement Python-alike features and can store values and keys of
-the simpler types previous enumerated.
+the simpler types enumerated above.
 
 #Credits
 

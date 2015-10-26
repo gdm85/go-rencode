@@ -191,8 +191,7 @@ func (r *Encoder) EncodeFloat64(f float64) error {
 
 // Encode will ingest and encode multiple values of the following supported types:
 //  - big.Int
-//  - List
-//  - Dictionary
+//  - List, Dictionary
 //  - bool
 //  - float32, float64
 //  - []byte, string (all strings are stored as byte slices anyway)
