@@ -38,9 +38,9 @@ func NewList(values ...interface{}) List {
 	return List{values}
 }
 
-// Add appends a new value to the list
-func (l *List) Add(value interface{}) {
-	l.values = append(l.values, value)
+// Add appends one or more values to the list
+func (l *List) Add(values ...interface{}) {
+	l.values = append(l.values, values...)
 }
 
 // Values returns all values in the list

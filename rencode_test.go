@@ -416,10 +416,7 @@ func TestDecodeStringBytes(t *testing.T) {
 func TestDecodeFixedList(t *testing.T) {
 	var l List
 
-	l.Add(int8(100))
-	l.Add(false)
-	l.Add([]byte("foobar"))
-	l.Add([]byte("bäz"))
+	l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
 
 	b := bytes.Buffer{}
 	e := NewEncoder(&b)
@@ -461,10 +458,7 @@ func TestDecodeList(t *testing.T) {
 	var l List
 
 	for i := 0; i < 80; i++ {
-		l.Add(int8(100))
-		l.Add(false)
-		l.Add([]byte("foobar"))
-		l.Add([]byte("bäz"))
+		l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
 	}
 
 	b := bytes.Buffer{}
@@ -565,8 +559,7 @@ func TestDecodeDictionary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nestedList.Add(true)
-	nestedList.Add("carrot")
+	nestedList.Add(true, "carrot")
 
 	for i := 0; i < 120; i++ {
 		err = dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
