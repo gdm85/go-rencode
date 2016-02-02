@@ -28,16 +28,14 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 	if data == nil {
 		return r.EncodeNone()
 	}
-	switch data.(type) {
+	switch x := data.(type) {
 	case big.Int:
-		x := data.(big.Int)
 		s := x.String()
 		if len(s) > MAX_INT_LENGTH {
 			return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 		}
 		return r.EncodeBigNumber(s)
 	case List:
-		x := data.(List)
 		if x.Length() < LIST_FIXED_COUNT {
 			_, err := r.w.Write([]byte{byte(LIST_FIXED_START + x.Length())})
 			if err != nil {
@@ -66,7 +64,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case Dictionary:
-		x := data.(Dictionary)
 		if x.Length() < DICT_FIXED_COUNT {
 			_, err := r.w.Write([]byte{byte(DICT_FIXED_START + x.Length())})
 			if err != nil {
@@ -104,26 +101,19 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case bool:
-		return r.EncodeBool(data.(bool))
+		return r.EncodeBool(x)
 	case float32:
-		return r.EncodeFloat32(data.(float32))
+		return r.EncodeFloat32(x)
 	case float64:
-		return r.EncodeFloat64(data.(float64))
+		return r.EncodeFloat64(x)
 	case []byte:
-		return r.EncodeBytes(data.([]byte))
+		return r.EncodeBytes(x)
 	case string:
 		// all strings will be treated as byte arrays
-		return r.EncodeBytes([]byte(data.(string)))
+		return r.EncodeBytes([]byte(x))
 	case int8:
-		return r.EncodeInt8(data.(int8))
-	case int16:
-		x := data.(int16)
-		if math.MinInt8 <= x && x <= math.MaxInt8 {
-			return r.EncodeInt8(int8(x))
-		}
-		return r.EncodeInt16(int16(x))
+		return r.EncodeInt8(x)
 	case uint32:
-		x := data.(uint32)
 		if x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
@@ -134,7 +124,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		return r.EncodeInt32(int32(x))
 		}
 	case int32:
-		x := data.(int32)
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
@@ -143,7 +132,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		}
 		return r.EncodeInt32(int32(x))
 	case int64:
-		x := data.(int64)
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
@@ -155,7 +143,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		}
 		return r.EncodeInt64(int64(x))
 	case int:
-		x := data.(int)
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
@@ -167,18 +154,21 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		}
 		return r.EncodeInt64(int64(x))
 	case uint8:
-		x := data.(uint8)
 		if x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
 	case uint16:
-		x := data.(uint16)
 		if x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
 		}
 		if x <= math.MaxInt16 {
 		return r.EncodeInt16(int16(x))
 		}
+	case int16:
+		if math.MinInt8 <= x && x <= math.MaxInt8 {
+			return r.EncodeInt8(int8(x))
+		}
+		return r.EncodeInt16(int16(x))
 	case uint64, uint:
 		s := fmt.Sprintf("%d", data)
 		if len(s) > MAX_INT_LENGTH {
@@ -191,217 +181,174 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 	panic("unexpected fallthrough")
 }
 func convertAssignInteger(src, dest interface{}) error {
-		switch src.(type) {
+		switch sv := src.(type) {
 			case big.Int:
-				switch dest.(type) {
+				switch dv := dest.(type) {
 					case *big.Int:
-						d := dest.(*big.Int)
-						*d = src.(big.Int)
+						*dv = sv
 						return nil
 				}
-		case uint32:
-			s := src.(uint32)
-			switch dest.(type) {
-			case *uint32:
-				d := dest.(*uint32)
-				*d = s
-				return nil
-		case *uint16:
-			d := dest.(*uint16)
-			if s > math.MaxUint16 {
-				return ErrConversionOverflow
-			}
-			*d = uint16(s)
-		return nil
-		case *uint8:
-			d := dest.(*uint8)
-			if s > math.MaxUint8 {
-				return ErrConversionOverflow
-			}
-			*d = uint8(s)
-		return nil
-		}
-		case int32:
-			s := src.(int32)
-			switch dest.(type) {
-			case *int32:
-				d := dest.(*int32)
-				*d = s
-				return nil
-		case *int16:
-			d := dest.(*int16)
-			if s > math.MaxInt16 || s < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*d = int16(s)
-			return nil
-		case *int64:
-			d := dest.(*int64)
-			*d = int64(s)
-			return nil
-		case *int:
-			d := dest.(*int)
-			*d = int(s)
-			return nil
-		case *int8:
-			d := dest.(*int8)
-			if s > math.MaxInt8 || s < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*d = int8(s)
-			return nil
-		}
-		case int64:
-			s := src.(int64)
-			switch dest.(type) {
-			case *int64:
-				d := dest.(*int64)
-				*d = s
-				return nil
-		case *int32:
-			d := dest.(*int32)
-			if s > math.MaxInt32 || s < math.MinInt32 {
-				return ErrConversionOverflow
-			}
-			*d = int32(s)
-			return nil
-		case *int:
-			d := dest.(*int)
-			*d = int(s)
-			return nil
-		case *int8:
-			d := dest.(*int8)
-			if s > math.MaxInt8 || s < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*d = int8(s)
-			return nil
-		case *int16:
-			d := dest.(*int16)
-			if s > math.MaxInt16 || s < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*d = int16(s)
-			return nil
-		}
-		case int:
-			s := src.(int)
-			switch dest.(type) {
-			case *int:
-				d := dest.(*int)
-				*d = s
-				return nil
-		case *int8:
-			d := dest.(*int8)
-			if s > math.MaxInt8 || s < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*d = int8(s)
-			return nil
-		case *int16:
-			d := dest.(*int16)
-			if s > math.MaxInt16 || s < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*d = int16(s)
-			return nil
-		case *int32:
-			d := dest.(*int32)
-			if s > math.MaxInt32 || s < math.MinInt32 {
-				return ErrConversionOverflow
-			}
-			*d = int32(s)
-			return nil
-		case *int64:
-			d := dest.(*int64)
-			*d = int64(s)
-			return nil
-		}
-		case int8:
-			s := src.(int8)
-			switch dest.(type) {
-			case *int8:
-				d := dest.(*int8)
-				*d = s
-				return nil
-		case *int32:
-			d := dest.(*int32)
-			*d = int32(s)
-			return nil
-		case *int64:
-			d := dest.(*int64)
-			*d = int64(s)
-			return nil
-		case *int:
-			d := dest.(*int)
-			*d = int(s)
-			return nil
-		case *int16:
-			d := dest.(*int16)
-			*d = int16(s)
-			return nil
-		}
-		case uint8:
-			s := src.(uint8)
-			switch dest.(type) {
-			case *uint8:
-				d := dest.(*uint8)
-				*d = s
-				return nil
-		case *uint16:
-			d := dest.(*uint16)
-			*d = uint16(s)
-		return nil
-		case *uint32:
-			d := dest.(*uint32)
-			*d = uint32(s)
-		return nil
-		}
 		case uint16:
-			s := src.(uint16)
-			switch dest.(type) {
+			switch dv := dest.(type) {
 			case *uint16:
-				d := dest.(*uint16)
-				*d = s
+				*dv = sv
 				return nil
+		case *uint32:
+			*dv = uint32(sv)
+		return nil
 		case *uint8:
-			d := dest.(*uint8)
-			if s > math.MaxUint8 {
+			if sv > math.MaxUint8 {
 				return ErrConversionOverflow
 			}
-			*d = uint8(s)
-		return nil
-		case *uint32:
-			d := dest.(*uint32)
-			*d = uint32(s)
+			*dv = uint8(sv)
 		return nil
 		}
 		case int16:
-			s := src.(int16)
-			switch dest.(type) {
+			switch dv := dest.(type) {
 			case *int16:
-				d := dest.(*int16)
-				*d = s
+				*dv = sv
 				return nil
-		case *int8:
-			d := dest.(*int8)
-			if s > math.MaxInt8 || s < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*d = int8(s)
-			return nil
 		case *int32:
-			d := dest.(*int32)
-			*d = int32(s)
+			*dv = int32(sv)
 			return nil
 		case *int64:
-			d := dest.(*int64)
-			*d = int64(s)
+			*dv = int64(sv)
 			return nil
 		case *int:
-			d := dest.(*int)
-			*d = int(s)
+			*dv = int(sv)
 			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ErrConversionOverflow
+			}
+			*dv = int8(sv)
+			return nil
+		}
+		case uint32:
+			switch dv := dest.(type) {
+			case *uint32:
+				*dv = sv
+				return nil
+		case *uint8:
+			if sv > math.MaxUint8 {
+				return ErrConversionOverflow
+			}
+			*dv = uint8(sv)
+		return nil
+		case *uint16:
+			if sv > math.MaxUint16 {
+				return ErrConversionOverflow
+			}
+			*dv = uint16(sv)
+		return nil
+		}
+		case int32:
+			switch dv := dest.(type) {
+			case *int32:
+				*dv = sv
+				return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ErrConversionOverflow
+			}
+			*dv = int16(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ErrConversionOverflow
+			}
+			*dv = int8(sv)
+			return nil
+		}
+		case int64:
+			switch dv := dest.(type) {
+			case *int64:
+				*dv = sv
+				return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ErrConversionOverflow
+			}
+			*dv = int16(sv)
+			return nil
+		case *int32:
+			if sv > math.MaxInt32 || sv < math.MinInt32 {
+				return ErrConversionOverflow
+			}
+			*dv = int32(sv)
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ErrConversionOverflow
+			}
+			*dv = int8(sv)
+			return nil
+		}
+		case int:
+			switch dv := dest.(type) {
+			case *int:
+				*dv = sv
+				return nil
+		case *int32:
+			if sv > math.MaxInt32 || sv < math.MinInt32 {
+				return ErrConversionOverflow
+			}
+			*dv = int32(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ErrConversionOverflow
+			}
+			*dv = int8(sv)
+			return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ErrConversionOverflow
+			}
+			*dv = int16(sv)
+			return nil
+		}
+		case int8:
+			switch dv := dest.(type) {
+			case *int8:
+				*dv = sv
+				return nil
+		case *int16:
+			*dv = int16(sv)
+			return nil
+		case *int32:
+			*dv = int32(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		}
+		case uint8:
+			switch dv := dest.(type) {
+			case *uint8:
+				*dv = sv
+				return nil
+		case *uint16:
+			*dv = uint16(sv)
+		return nil
+		case *uint32:
+			*dv = uint32(sv)
+		return nil
 		}
 		}
 	return fmt.Errorf("cannot convert from %T into %T", src, dest)

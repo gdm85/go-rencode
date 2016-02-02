@@ -57,16 +57,14 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 	if data == nil {
 		return r.EncodeNone()
 	}
-	switch data.(type) {
+	switch x := data.(type) {
 	case big.Int:
-		x := data.(big.Int)
 		s := x.String()
 		if len(s) > MAX_INT_LENGTH {
 			return fmt.Errorf("Number is longer than %d characters", MAX_INT_LENGTH)
 		}
 		return r.EncodeBigNumber(s)
 	case List:
-		x := data.(List)
 		if x.Length() < LIST_FIXED_COUNT {
 			_, err := r.w.Write([]byte{byte(LIST_FIXED_START + x.Length())})
 			if err != nil {
@@ -95,7 +93,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case Dictionary:
-		x := data.(Dictionary)
 		if x.Length() < DICT_FIXED_COUNT {
 			_, err := r.w.Write([]byte{byte(DICT_FIXED_START + x.Length())})
 			if err != nil {
@@ -133,18 +130,18 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		_, err = r.w.Write([]byte{byte(CHR_TERM)})
 		return err
 	case bool:
-		return r.EncodeBool(data.(bool))
+		return r.EncodeBool(x)
 	case float32:
-		return r.EncodeFloat32(data.(float32))
+		return r.EncodeFloat32(x)
 	case float64:
-		return r.EncodeFloat64(data.(float64))
+		return r.EncodeFloat64(x)
 	case []byte:
-		return r.EncodeBytes(data.([]byte))
+		return r.EncodeBytes(x)
 	case string:
 		// all strings will be treated as byte arrays
-		return r.EncodeBytes([]byte(data.(string)))
+		return r.EncodeBytes([]byte(x))
 	case int8:
-		return r.EncodeInt8(data.(int8))`
+		return r.EncodeInt8(x)`
 
 // template block ends
 
@@ -234,8 +231,7 @@ func main() {
 	fmt.Println(top)
 
 	for t, bitsize := range intTypes {
-		fmt.Printf(`	case %s:
-		x := data.(%s)`+"\n", t, t)
+		fmt.Printf("	case %s:\n", t)
 
 		if bitsize%2 == 0 {
 			// unsigned integer of some bitsize
@@ -267,12 +263,11 @@ func main() {
 
 	// generate integer conversion function
 	fmt.Println(`func convertAssignInteger(src, dest interface{}) error {
-		switch src.(type) {
+		switch sv := src.(type) {
 			case big.Int:
-				switch dest.(type) {
+				switch dv := dest.(type) {
 					case *big.Int:
-						d := dest.(*big.Int)
-						*d = src.(big.Int)
+						*dv = sv
 						return nil
 				}`)
 
@@ -281,12 +276,10 @@ func main() {
 
 	for st, sBitsize := range intTypes {
 		fmt.Printf(`		case %s:
-			s := src.(%s)
-			switch dest.(type) {
+			switch dv := dest.(type) {
 			case *%s:
-				d := dest.(*%s)
-				*d = s
-				return nil`+"\n", st, st, st, st)
+				*dv = sv
+				return nil`+"\n", st, st)
 		for dt, dBitsize := range intTypes {
 			if dt == st {
 				continue
@@ -325,33 +318,31 @@ func getMinValue(t string) string {
 }
 
 func unsignedConvertGenerate(sourceType string, sourceBitsize int, destType string, destBitsize int) {
-	fmt.Printf(`		case *%s:
-			d := dest.(*%s)`+"\n", destType, destType)
+	fmt.Printf("		case *%s:\n", destType)
 
 	// extra check in case of integer downsizing
 	if sourceBitsize > destBitsize {
-		fmt.Printf(`			if s > %s {
+		fmt.Printf(`			if sv > %s {
 				return ErrConversionOverflow
 			}`+"\n", getMaxValue(destType))
 	}
 
 	// assign with conversion
-	fmt.Printf(`			*d = %s(s)
+	fmt.Printf(`			*dv = %s(sv)
 		return nil`+"\n", destType)
 }
 
 func signedConvertGenerate(sourceType string, sourceBitsize int, destType string, destBitsize int) {
-	fmt.Printf(`		case *%s:
-			d := dest.(*%s)`+"\n", destType, destType)
+	fmt.Printf("		case *%s:\n", destType)
 
 	// extra check in case of integer downsizing
 	if sourceBitsize > destBitsize {
-		fmt.Printf(`			if s > %s || s < %s {
+		fmt.Printf(`			if sv > %s || sv < %s {
 				return ErrConversionOverflow
 			}`+"\n", getMaxValue(destType), getMinValue(destType))
 	}
 
 	// assign with conversion
-	fmt.Printf(`			*d = %s(s)
+	fmt.Printf(`			*dv = %s(sv)
 			return nil`+"\n", destType)
 }

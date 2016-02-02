@@ -26,39 +26,35 @@ import (
 // this hack allows fetching keys by either string or byte slice type
 // no other special matching is performed with other slice types
 func deepEqual(a, b interface{}) bool {
-	switch a.(type) {
+	switch av := a.(type) {
 	case string:
-		switch b.(type) {
+		switch bv := b.(type) {
 		case []byte:
-			return bytes.Compare([]byte(a.(string)), b.([]byte)) == 0
+			return bytes.Compare([]byte(av), bv) == 0
 		case string:
-			return a == b
+			return av == bv
 		default:
 			return false
 		}
 	case []byte:
-		switch b.(type) {
+		switch bv := b.(type) {
 		case []byte:
-			return bytes.Compare(a.([]byte), b.([]byte)) == 0
+			return bytes.Compare(av, bv) == 0
 		case string:
-			return bytes.Compare([]byte(b.(string)), a.([]byte)) == 0
+			return bytes.Compare([]byte(bv), av) == 0
 		default:
 			return false
 		}
 	case Dictionary:
-		switch b.(type) {
+		switch bv := b.(type) {
 		case Dictionary:
-			d1 := a.(Dictionary)
-			d2 := b.(Dictionary)
-			return d1.Equals(&d2)
+			return av.Equals(&bv)
 		}
 		return false
 	case List:
-		switch b.(type) {
+		switch bv := b.(type) {
 		case List:
-			l1 := a.(List)
-			l2 := b.(List)
-			return l1.Equals(&l2)
+			return av.Equals(&bv)
 		}
 		return false
 	}
