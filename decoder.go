@@ -45,14 +45,13 @@ func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r}
 }
 
-func (r *Decoder) readByte() (b byte, err error) {
+func (r *Decoder) readByte() (byte, error) {
 	data := []byte{0}
-	_, err = r.r.Read(data)
-	if err != nil {
-		return
+	n, err := r.r.Read(data)
+	if n == 1 {
+		return data[0], nil
 	}
-	b = data[0]
-	return
+	return 0, err
 }
 
 func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
