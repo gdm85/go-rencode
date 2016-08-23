@@ -1,4 +1,5 @@
 package rencode
+
 //
 // go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
@@ -118,10 +119,10 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 			return r.EncodeInt8(int8(x))
 		}
 		if x <= math.MaxInt16 {
-		return r.EncodeInt16(int16(x))
+			return r.EncodeInt16(int16(x))
 		}
 		if x <= math.MaxInt32 {
-		return r.EncodeInt32(int32(x))
+			return r.EncodeInt32(int32(x))
 		}
 	case int32:
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
@@ -162,7 +163,7 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 			return r.EncodeInt8(int8(x))
 		}
 		if x <= math.MaxInt16 {
-		return r.EncodeInt16(int16(x))
+			return r.EncodeInt16(int16(x))
 		}
 	case int16:
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
@@ -181,33 +182,33 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 	panic("unexpected fallthrough")
 }
 func convertAssignInteger(src, dest interface{}) error {
-		switch sv := src.(type) {
-			case big.Int:
-				switch dv := dest.(type) {
-					case *big.Int:
-						*dv = sv
-						return nil
-				}
-		case uint16:
-			switch dv := dest.(type) {
-			case *uint16:
-				*dv = sv
-				return nil
+	switch sv := src.(type) {
+	case big.Int:
+		switch dv := dest.(type) {
+		case *big.Int:
+			*dv = sv
+			return nil
+		}
+	case uint16:
+		switch dv := dest.(type) {
+		case *uint16:
+			*dv = sv
+			return nil
 		case *uint32:
 			*dv = uint32(sv)
-		return nil
+			return nil
 		case *uint8:
 			if sv > math.MaxUint8 {
 				return ErrConversionOverflow
 			}
 			*dv = uint8(sv)
-		return nil
+			return nil
 		}
-		case int16:
-			switch dv := dest.(type) {
-			case *int16:
-				*dv = sv
-				return nil
+	case int16:
+		switch dv := dest.(type) {
+		case *int16:
+			*dv = sv
+			return nil
 		case *int32:
 			*dv = int32(sv)
 			return nil
@@ -224,29 +225,29 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = int8(sv)
 			return nil
 		}
-		case uint32:
-			switch dv := dest.(type) {
-			case *uint32:
-				*dv = sv
-				return nil
+	case uint32:
+		switch dv := dest.(type) {
+		case *uint32:
+			*dv = sv
+			return nil
 		case *uint8:
 			if sv > math.MaxUint8 {
 				return ErrConversionOverflow
 			}
 			*dv = uint8(sv)
-		return nil
+			return nil
 		case *uint16:
 			if sv > math.MaxUint16 {
 				return ErrConversionOverflow
 			}
 			*dv = uint16(sv)
-		return nil
+			return nil
 		}
-		case int32:
-			switch dv := dest.(type) {
-			case *int32:
-				*dv = sv
-				return nil
+	case int32:
+		switch dv := dest.(type) {
+		case *int32:
+			*dv = sv
+			return nil
 		case *int16:
 			if sv > math.MaxInt16 || sv < math.MinInt16 {
 				return ErrConversionOverflow
@@ -266,11 +267,11 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = int8(sv)
 			return nil
 		}
-		case int64:
-			switch dv := dest.(type) {
-			case *int64:
-				*dv = sv
-				return nil
+	case int64:
+		switch dv := dest.(type) {
+		case *int64:
+			*dv = sv
+			return nil
 		case *int16:
 			if sv > math.MaxInt16 || sv < math.MinInt16 {
 				return ErrConversionOverflow
@@ -293,11 +294,11 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = int8(sv)
 			return nil
 		}
-		case int:
-			switch dv := dest.(type) {
-			case *int:
-				*dv = sv
-				return nil
+	case int:
+		switch dv := dest.(type) {
+		case *int:
+			*dv = sv
+			return nil
 		case *int32:
 			if sv > math.MaxInt32 || sv < math.MinInt32 {
 				return ErrConversionOverflow
@@ -320,11 +321,11 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = int16(sv)
 			return nil
 		}
-		case int8:
-			switch dv := dest.(type) {
-			case *int8:
-				*dv = sv
-				return nil
+	case int8:
+		switch dv := dest.(type) {
+		case *int8:
+			*dv = sv
+			return nil
 		case *int16:
 			*dv = int16(sv)
 			return nil
@@ -338,18 +339,18 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = int(sv)
 			return nil
 		}
-		case uint8:
-			switch dv := dest.(type) {
-			case *uint8:
-				*dv = sv
-				return nil
+	case uint8:
+		switch dv := dest.(type) {
+		case *uint8:
+			*dv = sv
+			return nil
 		case *uint16:
 			*dv = uint16(sv)
-		return nil
+			return nil
 		case *uint32:
 			*dv = uint32(sv)
-		return nil
+			return nil
 		}
-		}
+	}
 	return fmt.Errorf("cannot convert from %T into %T", src, dest)
 }

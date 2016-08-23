@@ -29,7 +29,7 @@ Example of encoder construction and use:
 
 	b := bytes.Buffer{}
 	e := rencode.NewEncoder(&b)
-	
+
 	err := e.Encode(100, true, "hello world", rencode.NewList(42, "nesting is awesome"), 3.14, rencode.Dictionary{})
 
 You can use either specific methods to encode one of the supported types, or the interface-generic Encode() method.

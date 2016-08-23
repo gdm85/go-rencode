@@ -84,7 +84,7 @@ func (r *Encoder) EncodeInt8(x int8) error {
 	}
 	// x is guaranteed to be in range (-128, 127)
 	_, err := r.w.Write([]byte{CHR_INT1, byte(x)})
-        return err
+	return err
 }
 
 // EncodeBool encodes a bool value

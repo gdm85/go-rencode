@@ -9,4 +9,4 @@ rencode_generated.go:
 	go generate > rencode_generated.go.tmp
 	mv rencode_generated.go.tmp rencode_generated.go
 
-.PHONY: tests
+.PHONY: tests clean

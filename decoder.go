@@ -54,8 +54,8 @@ func (r *Decoder) readByte() (byte, error) {
 	return 0, err
 }
 
-// readByteSliceUntil takes a []byte to fill it and check errors appropriately
-func (r *Decoder) readByteSliceUntil(data []byte) error {
+// readByteSlice takes a []byte to fill it and check errors appropriately
+func (r *Decoder) readByteSlice(data []byte) error {
 	n, err := r.r.Read(data)
 	if n == len(data) {
 		return nil
@@ -63,7 +63,8 @@ func (r *Decoder) readByteSliceUntil(data []byte) error {
 	return err
 }
 
-func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
+// readByteSliceUntil will read a slice of data until 'delim' is found
+func (r *Decoder) readByteSliceUntil(delim byte) (data []byte, err error) {
 	var b byte
 	for {
 		b, err = r.readByte()
@@ -120,7 +121,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 		v = data
 	case CHR_INT:
 		var collected []byte
-		collected, err = r.readSlice(CHR_TERM)
+		collected, err = r.readByteSliceUntil(CHR_TERM)
 		if err != nil {
 			return
 		}
@@ -164,7 +165,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 		if STR_FIXED_START <= typeCode && typeCode < STR_FIXED_START+STR_FIXED_COUNT {
 			b := typeCode - STR_FIXED_START
 			data := make([]byte, b)
-			err = r.readByteSliceUntil(data)
+			err = r.readByteSlice(data)
 			if err != nil {
 				return
 			}
@@ -173,7 +174,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 		}
 		if '1' <= typeCode && typeCode <= '9' {
 			var collected []byte
-			collected, err = r.readSlice(':')
+			collected, err = r.readByteSliceUntil(':')
 			if err != nil {
 				return
 			}
@@ -189,7 +190,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 			}
 
 			data := make([]byte, stringSz)
-			err = r.readByteSliceUntil(data)
+			err = r.readByteSlice(data)
 			if err != nil {
 				return
 			}
