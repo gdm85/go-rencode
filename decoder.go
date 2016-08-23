@@ -54,6 +54,15 @@ func (r *Decoder) readByte() (byte, error) {
 	return 0, err
 }
 
+// readByteSliceUntil takes a []byte to fill it and check errors appropriately
+func (r *Decoder) readByteSliceUntil(data []byte) error {
+	n, err := r.r.Read(data)
+	if n == len(data) {
+		return nil
+	}
+	return err
+}
+
 func (r *Decoder) readSlice(delim byte) (data []byte, err error) {
 	var b byte
 	for {
@@ -91,12 +100,12 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 	case CHR_NONE:
 		// leave v as nil
 	case CHR_INT1:
-		data := []byte{0}
-		_, err = r.r.Read(data)
+		var b byte
+		b, err = r.readByte()
 		if err != nil {
 			return
 		}
-		v = int8(data[0])
+		v = int8(b)
 	case CHR_INT2:
 		var data int16
 		err = binary.Read(r.r, binary.BigEndian, &data)
@@ -155,8 +164,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 		if STR_FIXED_START <= typeCode && typeCode < STR_FIXED_START+STR_FIXED_COUNT {
 			b := typeCode - STR_FIXED_START
 			data := make([]byte, b)
-
-			_, err = r.r.Read(data)
+			err = r.readByteSliceUntil(data)
 			if err != nil {
 				return
 			}
@@ -181,11 +189,10 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 			}
 
 			data := make([]byte, stringSz)
-			_, err = r.r.Read(data)
+			err = r.readByteSliceUntil(data)
 			if err != nil {
 				return
 			}
-
 			v = data
 		}
 
