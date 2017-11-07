@@ -24,10 +24,15 @@ import (
 	"fmt"
 )
 
-var (
-	// ErrConversionOverflow is returned when the scanned integer would overflow the destination integer
-	ErrConversionOverflow = errors.New("conversion would overflow integer size")
-)
+// ConversionOverflow is returned when the scanned integer would overflow the destination integer
+type ConversionOverflow struct {
+	SourceTypeName string
+	DestTypeName   string
+}
+
+func (co ConversionOverflow) Error() string {
+	return fmt.Sprintf("conversion from %q to %q would overflow integer size", co.SourceTypeName, co.DestTypeName)
+}
 
 // Scan will scan the decoder data to fill in the specified target objects; if possible,
 // a conversion will be performed. If targets have not pointer types or if the conversion is

@@ -48,33 +48,7 @@ func (l *List) Values() []interface{} {
 	return l.values
 }
 
-// Get returns the value defined in the list at specific index
-func (l *List) Get(i int) (interface{}, error) {
-	if i < 0 || i >= len(l.values) {
-		return nil, ErrKeyNotFound
-	}
-
-	return l.values[i], nil
-}
-
 // Length returns the total count of elements
 func (l *List) Length() int {
 	return len(l.values)
-}
-
-// Equals performs an equality comparison on specified lists;
-// []byte and string are considered the same type, and only List and Dictionary
-// types are recursively compared
-func (l *List) Equals(b *List) bool {
-	if l.Length() != b.Length() {
-		return false
-	}
-
-	for i, v1 := range l.values {
-		if !deepEqual(v1, b.values[i]) {
-			return false
-		}
-	}
-
-	return true
 }

@@ -323,8 +323,8 @@ func unsignedConvertGenerate(sourceType string, sourceBitsize int, destType stri
 	// extra check in case of integer downsizing
 	if sourceBitsize > destBitsize {
 		fmt.Printf(`			if sv > %s {
-				return ErrConversionOverflow
-			}`+"\n", getMaxValue(destType))
+				return ConversionOverflow{%q, %q}
+			}`+"\n", getMaxValue(destType), sourceType, destType)
 	}
 
 	// assign with conversion
@@ -338,8 +338,8 @@ func signedConvertGenerate(sourceType string, sourceBitsize int, destType string
 	// extra check in case of integer downsizing
 	if sourceBitsize > destBitsize {
 		fmt.Printf(`			if sv > %s || sv < %s {
-				return ErrConversionOverflow
-			}`+"\n", getMaxValue(destType), getMinValue(destType))
+				return ConversionOverflow{%q, %q}
+			}`+"\n", getMaxValue(destType), getMinValue(destType), sourceType, destType)
 	}
 
 	// assign with conversion

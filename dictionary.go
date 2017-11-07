@@ -21,6 +21,10 @@ package rencode
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
 )
 
 var (
@@ -49,62 +53,122 @@ func (d *Dictionary) Values() []interface{} {
 	return d.values
 }
 
-// Get returns the value stored for the matching key.
-// Note that special equality rules apply.
-func (d *Dictionary) Get(key interface{}) (interface{}, error) {
-	for i, k := range d.keys {
-		if deepEqual(k, key) {
-			return d.values[i], nil
-		}
-	}
-	return nil, ErrKeyNotFound
-}
-
-// Set updates or add the specified key with the specified value and returns true if a previous value was overwritten
-func (d *Dictionary) Set(key, value interface{}) bool {
-	for i, k := range d.keys {
-		if deepEqual(k, key) {
-			d.values[i] = value
-			return true
-		}
-	}
-
+// Add appends a new (key, value) pair; does not check if key already exists.
+func (d *Dictionary) Add(key, value interface{}) {
 	d.keys = append(d.keys, key)
 	d.values = append(d.values, value)
-	return false
 }
 
-// Add appends a new (key, value) pair or returns an error if key already exists
-func (d *Dictionary) Add(key, value interface{}) error {
-	for _, k := range d.keys {
-		if deepEqual(k, key) {
-			return ErrKeyAlreadyExists
+// Zip returns a map with strings as keys or an error if a duplicate key exists.
+func (d *Dictionary) Zip() (map[string]interface{}, error) {
+	result := map[string]interface{}{}
+
+	for i, k := range d.keys {
+		v, ok := k.([]uint8)
+		if !ok {
+			return nil, errors.New("found key which is not []uint8")
 		}
+		sv := string(v)
+		if _, ok := result[sv]; ok {
+			return nil, ErrKeyAlreadyExists
+		}
+		result[sv] = d.values[i]
 	}
 
-	d.keys = append(d.keys, key)
-	d.values = append(d.values, value)
+	return result, nil
+}
+
+var camel = regexp.MustCompile("(^[^A-Z0-9]*|[A-Z0-9]*)([A-Z0-9][^A-Z]+|$)")
+
+func toUnderscore(s string) string {
+	var a []string
+	for _, sub := range camel.FindAllStringSubmatch(s, -1) {
+		if sub[1] != "" {
+			a = append(a, sub[1])
+		}
+		if sub[2] != "" {
+			a = append(a, sub[2])
+		}
+	}
+	return strings.ToLower(strings.Join(a, "_"))
+}
+
+func (d *Dictionary) ToStruct(dest interface{}) error {
+	v := reflect.ValueOf(dest)
+	if v.Kind() != reflect.Ptr {
+		return fmt.Errorf("expected pointer to struct, got %v", v.Type())
+	}
+
+	// get a temporary map with zipped fields
+	tmp, err := d.Zip()
+	if err != nil {
+		return err
+	}
+
+	iv := reflect.Indirect(v)
+	t := iv.Type()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		// destination field
+		ivf := iv.Field(i)
+		name := toUnderscore(f.Name)
+
+		// see if this field is available
+		v, ok := tmp[name]
+		if !ok {
+			return fmt.Errorf("field %q: cannot be satisfied", f.Name)
+		}
+
+		// special behaviour for slices
+		if ivf.Kind() == reflect.Slice {
+			// get value as list
+			var l List
+			err = convertAssign(v, &l)
+			if err != nil {
+				return fmt.Errorf("slice field %q: value %v: %v", f.Name, v, err)
+			}
+			// create a new slice
+			ns := reflect.MakeSlice(ivf.Type(), l.Length(), l.Length())
+			// get element type
+			elemType := ivf.Type().Elem()
+			for i, v := range l.Values() {
+				// all pointed fields are expected to be structs
+				if elemType.Kind() == reflect.Struct {
+					d, ok := v.(Dictionary)
+					if !ok {
+						return fmt.Errorf("slice field %q: expected value to be dictionary", f.Name)
+					}
+
+					obj := reflect.New(elemType)
+
+					err = d.ToStruct(obj.Interface())
+					if err != nil {
+						return fmt.Errorf("slice field %q: %v", f.Name, err)
+					}
+
+					ns.Index(i).Set(reflect.Indirect(obj))
+				} else {
+					err = convertAssign(v, ns.Index(i).Addr().Interface())
+					if err != nil {
+						return fmt.Errorf("slice field %q: value %v: %v", f.Name, v, err)
+					}
+				}
+			}
+			ivf.Set(ns)
+		} else {
+			err = convertAssign(v, ivf.Addr().Interface())
+			if err != nil {
+				return fmt.Errorf("field %q: value %v: %v", f.Name, v, err)
+			}
+		}
+
+		// start removing fields that have been used
+		delete(tmp, name)
+	}
+
+	if len(tmp) != 0 {
+		return fmt.Errorf("%d fields left after parsing: %v", len(tmp), tmp)
+	}
+
 	return nil
-}
-
-// Equals will compare keys and values to be a perfect match.
-// Note that special equality rules apply.
-func (d *Dictionary) Equals(b *Dictionary) bool {
-	if d.Length() != b.Length() {
-		return false
-	}
-
-	keys2 := b.Keys()
-	for i, k1 := range d.keys {
-		if !deepEqual(k1, keys2[i]) {
-			return false
-		}
-
-		// compare values as well
-		if !deepEqual(d.values[i], b.values[i]) {
-			return false
-		}
-	}
-
-	return true
 }

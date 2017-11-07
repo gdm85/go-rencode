@@ -1,3 +1,6 @@
+build: rencode_generated.go
+	go build
+
 tests: rencode_generated.go
 	go test
 
@@ -9,4 +12,4 @@ rencode_generated.go:
 	go generate > rencode_generated.go.tmp
 	mv rencode_generated.go.tmp rencode_generated.go
 
-.PHONY: tests clean
+.PHONY: build tests clean

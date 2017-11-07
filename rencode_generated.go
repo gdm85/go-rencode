@@ -114,6 +114,11 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		return r.EncodeBytes([]byte(x))
 	case int8:
 		return r.EncodeInt8(x)
+	case int16:
+		if math.MinInt8 <= x && x <= math.MaxInt8 {
+			return r.EncodeInt8(int8(x))
+		}
+		return r.EncodeInt16(int16(x))
 	case uint32:
 		if x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
@@ -165,11 +170,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		if x <= math.MaxInt16 {
 			return r.EncodeInt16(int16(x))
 		}
-	case int16:
-		if math.MinInt8 <= x && x <= math.MaxInt8 {
-			return r.EncodeInt8(int8(x))
-		}
-		return r.EncodeInt16(int16(x))
 	case uint64, uint:
 		s := fmt.Sprintf("%d", data)
 		if len(s) > MAX_INT_LENGTH {
@@ -189,19 +189,127 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = sv
 			return nil
 		}
+	case int32:
+		switch dv := dest.(type) {
+		case *int32:
+			*dv = sv
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ConversionOverflow{"int32", "int8"}
+			}
+			*dv = int8(sv)
+			return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ConversionOverflow{"int32", "int16"}
+			}
+			*dv = int16(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		}
+	case int64:
+		switch dv := dest.(type) {
+		case *int64:
+			*dv = sv
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ConversionOverflow{"int64", "int8"}
+			}
+			*dv = int8(sv)
+			return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ConversionOverflow{"int64", "int16"}
+			}
+			*dv = int16(sv)
+			return nil
+		case *int32:
+			if sv > math.MaxInt32 || sv < math.MinInt32 {
+				return ConversionOverflow{"int64", "int32"}
+			}
+			*dv = int32(sv)
+			return nil
+		}
+	case int:
+		switch dv := dest.(type) {
+		case *int:
+			*dv = sv
+			return nil
+		case *int32:
+			if sv > math.MaxInt32 || sv < math.MinInt32 {
+				return ConversionOverflow{"int", "int32"}
+			}
+			*dv = int32(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ConversionOverflow{"int", "int8"}
+			}
+			*dv = int8(sv)
+			return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ConversionOverflow{"int", "int16"}
+			}
+			*dv = int16(sv)
+			return nil
+		}
+	case int8:
+		switch dv := dest.(type) {
+		case *int8:
+			*dv = sv
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int16:
+			*dv = int16(sv)
+			return nil
+		case *int32:
+			*dv = int32(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
+		}
+	case uint8:
+		switch dv := dest.(type) {
+		case *uint8:
+			*dv = sv
+			return nil
+		case *uint16:
+			*dv = uint16(sv)
+			return nil
+		case *uint32:
+			*dv = uint32(sv)
+			return nil
+		}
 	case uint16:
 		switch dv := dest.(type) {
 		case *uint16:
 			*dv = sv
 			return nil
-		case *uint32:
-			*dv = uint32(sv)
-			return nil
 		case *uint8:
 			if sv > math.MaxUint8 {
-				return ErrConversionOverflow
+				return ConversionOverflow{"uint16", "uint8"}
 			}
 			*dv = uint8(sv)
+			return nil
+		case *uint32:
+			*dv = uint32(sv)
 			return nil
 		}
 	case int16:
@@ -220,7 +328,7 @@ func convertAssignInteger(src, dest interface{}) error {
 			return nil
 		case *int8:
 			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ErrConversionOverflow
+				return ConversionOverflow{"int16", "int8"}
 			}
 			*dv = int8(sv)
 			return nil
@@ -232,123 +340,15 @@ func convertAssignInteger(src, dest interface{}) error {
 			return nil
 		case *uint8:
 			if sv > math.MaxUint8 {
-				return ErrConversionOverflow
+				return ConversionOverflow{"uint32", "uint8"}
 			}
 			*dv = uint8(sv)
 			return nil
 		case *uint16:
 			if sv > math.MaxUint16 {
-				return ErrConversionOverflow
+				return ConversionOverflow{"uint32", "uint16"}
 			}
 			*dv = uint16(sv)
-			return nil
-		}
-	case int32:
-		switch dv := dest.(type) {
-		case *int32:
-			*dv = sv
-			return nil
-		case *int16:
-			if sv > math.MaxInt16 || sv < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*dv = int16(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
-			return nil
-		case *int:
-			*dv = int(sv)
-			return nil
-		case *int8:
-			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*dv = int8(sv)
-			return nil
-		}
-	case int64:
-		switch dv := dest.(type) {
-		case *int64:
-			*dv = sv
-			return nil
-		case *int16:
-			if sv > math.MaxInt16 || sv < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*dv = int16(sv)
-			return nil
-		case *int32:
-			if sv > math.MaxInt32 || sv < math.MinInt32 {
-				return ErrConversionOverflow
-			}
-			*dv = int32(sv)
-			return nil
-		case *int:
-			*dv = int(sv)
-			return nil
-		case *int8:
-			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*dv = int8(sv)
-			return nil
-		}
-	case int:
-		switch dv := dest.(type) {
-		case *int:
-			*dv = sv
-			return nil
-		case *int32:
-			if sv > math.MaxInt32 || sv < math.MinInt32 {
-				return ErrConversionOverflow
-			}
-			*dv = int32(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
-			return nil
-		case *int8:
-			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ErrConversionOverflow
-			}
-			*dv = int8(sv)
-			return nil
-		case *int16:
-			if sv > math.MaxInt16 || sv < math.MinInt16 {
-				return ErrConversionOverflow
-			}
-			*dv = int16(sv)
-			return nil
-		}
-	case int8:
-		switch dv := dest.(type) {
-		case *int8:
-			*dv = sv
-			return nil
-		case *int16:
-			*dv = int16(sv)
-			return nil
-		case *int32:
-			*dv = int32(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
-			return nil
-		case *int:
-			*dv = int(sv)
-			return nil
-		}
-	case uint8:
-		switch dv := dest.(type) {
-		case *uint8:
-			*dv = sv
-			return nil
-		case *uint16:
-			*dv = uint16(sv)
-			return nil
-		case *uint32:
-			*dv = uint32(sv)
 			return nil
 		}
 	}

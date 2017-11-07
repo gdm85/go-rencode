@@ -235,10 +235,7 @@ func (r *Decoder) decode(typeCode byte) (v interface{}, err error) {
 				}
 
 				// add, never update existing key
-				err = d.Add(key, value)
-				if err != nil {
-					return
-				}
+				d.Add(key, value)
 			}
 			v = d
 		}
@@ -272,8 +269,11 @@ func (r *Decoder) decodeDict() (d Dictionary, err error) {
 		if err != nil {
 			return
 		}
+
+		// check if key has no value
 		if typeCode == CHR_TERM {
-			err = fmt.Errorf("incomplete key-value pair in dictionary data")
+			// add, never update existing key
+			d.Add(key, nil)
 			break
 		}
 
@@ -284,10 +284,7 @@ func (r *Decoder) decodeDict() (d Dictionary, err error) {
 		}
 
 		// add, never update existing key
-		err = d.Add(key, value)
-		if err != nil {
-			return
-		}
+		d.Add(key, value)
 	}
 
 	return

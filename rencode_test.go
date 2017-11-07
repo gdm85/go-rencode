@@ -437,10 +437,7 @@ func TestDecodeFixedList(t *testing.T) {
 	f := found.(List)
 
 	for i, v := range l.Values() {
-		fv, err := f.Get(i)
-		if err != nil {
-			t.Fatal(err)
-		}
+		fv := f.Values()[i]
 		switch v.(type) {
 		case []byte:
 			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
@@ -480,10 +477,7 @@ func TestDecodeList(t *testing.T) {
 	f := found.(List)
 
 	for i, v := range l.Values() {
-		fv, err := f.Get(i)
-		if err != nil {
-			t.Fatal(err)
-		}
+		fv := f.Values()[i]
 		switch v.(type) {
 		case []byte:
 			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
@@ -500,19 +494,12 @@ func TestDecodeList(t *testing.T) {
 func TestDecodeFixedDict(t *testing.T) {
 	var dict Dictionary
 
-	err := dict.Add("abcdefghijk", int16(1234))
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = dict.Add(false, []byte("bäz"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	dict.Add("abcdefghijk", int16(1234))
+	dict.Add(false, []byte("bäz"))
 	b := bytes.Buffer{}
 	e := NewEncoder(&b)
 
-	err = e.Encode(dict)
+	err := e.Encode(dict)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -525,22 +512,26 @@ func TestDecodeFixedDict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := found.(Dictionary)
+	f1 := found.(Dictionary)
+	f, err := f1.Zip()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := dict.Zip()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	keys := dict.Keys()
-	for i, v := range dict.Values() {
-		fv, err := f.Get(keys[i])
-		if err != nil {
-			t.Fatal(err)
-		}
+	for k, v := range a {
+		fv := f[k]
 		switch v.(type) {
 		case []byte:
 			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+				t.Fatalf("index %v: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		default:
 			if v != fv {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+				t.Fatalf("index %v: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		}
 	}
@@ -551,35 +542,20 @@ func TestDecodeDictionary(t *testing.T) {
 	var nestedDict Dictionary
 	var nestedList List
 
-	err := nestedDict.Add("abcdefghijk", int16(1234))
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = nestedDict.Add(false, []byte("bäz"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	nestedDict.Add("abcdefghijk", int16(1234))
+	nestedDict.Add(false, []byte("bäz"))
 	nestedList.Add(true, "carrot")
 
 	for i := 0; i < 120; i++ {
-		err = dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = dict.Add(fmt.Sprintf("z %d", i), nestedList)
-		if err != nil {
-			t.Fatal(err)
-		}
+		dict.Add(fmt.Sprintf("abcde %d", i), []byte("foo"))
+		dict.Add(fmt.Sprintf("fghijk %d", i), nestedDict)
+		dict.Add(fmt.Sprintf("z %d", i), nestedList)
 	}
 
 	b := bytes.Buffer{}
 	e := NewEncoder(&b)
 
-	err = e.Encode(dict)
+	err := e.Encode(dict)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -593,50 +569,50 @@ func TestDecodeDictionary(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := found.(Dictionary)
+	z, err := f.Zip()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := dict.Zip()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	keys := dict.Keys()
-	for i, v := range dict.Values() {
-		fv, err := f.Get(keys[i])
-		if err != nil {
-			t.Fatal(err)
-		}
+	for k, v := range a {
+		fv := z[k]
 		switch v.(type) {
 		case []byte:
 			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		case Dictionary:
 			d1 := v.(Dictionary)
 			d2 := fv.(Dictionary)
-			if !d1.Equals(&d2) {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			if !dictCompare(&d1, &d2) {
+				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		case List:
 			l1 := v.(List)
 			l2 := fv.(List)
-			if !l1.Equals(&l2) {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+			if !listCompare(&l1, &l2) {
+				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		default:
 			if v != fv {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
+				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
 			}
 		}
 	}
 
 	// check that we have a carrot in one of the nested list values
-	v, err := f.Get("z 10")
-	if err != nil {
-		t.Fatal(err)
+	v, ok := z["z 10"]
+	if !ok {
+		t.Fatal("key not found")
 	}
 
 	l := v.(List)
 
-	fv, err := l.Get(1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	fv := l.Values()[1]
 	if string(fv.([]byte)) != "carrot" {
 		t.Fatal("carrot not found")
 	}
@@ -648,17 +624,19 @@ func TestDictionaryCompare(t *testing.T) {
 	for i := 1; i <= 10; i++ {
 		key := fmt.Sprintf("key %d", i)
 
-		err := d1.Add(key, rand.Int())
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = d2.Add(key, rand.Int())
-		if err != nil {
-			t.Fatal(err)
-		}
+		d1.Add(key, rand.Int())
+		d2.Add(key, rand.Int())
 	}
 
-	if d1.Equals(&d2) {
+	if dictCompare(&d1, &d2) {
 		t.Fatal("for some reason, dictionaries that should be different are the same")
 	}
+}
+
+func listCompare(a, b *List) bool {
+	return false
+}
+
+func dictCompare(a, b *Dictionary) bool {
+	return false
 }
