@@ -64,11 +64,16 @@ func (d *Dictionary) Zip() (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 
 	for i, k := range d.keys {
+		var sv string
 		v, ok := k.([]uint8)
 		if !ok {
-			return nil, errors.New("found key which is not []uint8")
+			sv, ok = k.(string)
+			if !ok {
+				return nil, fmt.Errorf("found key with type %T, expected []uint8 or string", k)
+			}
+		} else {
+			sv = string(v)
 		}
-		sv := string(v)
 		if _, ok := result[sv]; ok {
 			return nil, ErrKeyAlreadyExists
 		}

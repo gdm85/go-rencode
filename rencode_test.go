@@ -589,17 +589,17 @@ func TestDecodeDictionary(t *testing.T) {
 			d1 := v.(Dictionary)
 			d2 := fv.(Dictionary)
 			if !dictCompare(&d1, &d2) {
-				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
+				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
 			}
 		case List:
 			l1 := v.(List)
 			l2 := fv.(List)
 			if !listCompare(&l1, &l2) {
-				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
+				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
 			}
 		default:
 			if v != fv {
-				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
+				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
 			}
 		}
 	}
@@ -630,6 +630,26 @@ func TestDictionaryCompare(t *testing.T) {
 
 	if dictCompare(&d1, &d2) {
 		t.Fatal("for some reason, dictionaries that should be different are the same")
+	}
+}
+
+func TestDecodeIntIntoFloat(t *testing.T) {
+	for _, value := range []interface{}{int8(45), int32(7483648), int32(-7483648)} {
+		b := bytes.Buffer{}
+		e := NewEncoder(&b)
+
+		err := e.Encode(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		d := NewDecoder(&b)
+
+		var f32 float32
+		err = d.Scan(&f32)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

@@ -71,67 +71,78 @@ func (l *List) Scan(targets ...interface{}) error {
 }
 
 func convertAssign(src, dest interface{}) error {
-	switch src.(type) {
+	switch src := src.(type) {
 	case bool:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *bool:
-			d := dest.(*bool)
-			*d = src.(bool)
+			*dest = src
 			return nil
 		}
 	case List:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *List:
-			d := dest.(*List)
-			*d = src.(List)
+			*dest = src
 			return nil
 		}
 	case Dictionary:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *Dictionary:
-			d := dest.(*Dictionary)
-			*d = src.(Dictionary)
+			*dest = src
 			return nil
 		}
 	case float32:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *float32:
-			d := dest.(*float32)
-			*d = src.(float32)
+			*dest = src
 			return nil
 		case *float64:
-			d := dest.(*float64)
-			*d = float64(src.(float32))
+			*dest = float64(src)
 			return nil
 		}
 	case float64:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *float64:
-			d := dest.(*float64)
-			*d = src.(float64)
+			*dest = src
 			return nil
 		}
 	case []byte:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *[]byte:
-			d := dest.(*[]byte)
-			*d = src.([]byte)
+			*dest = src
 			return nil
 		case *string:
-			d := dest.(*string)
-			*d = string(src.([]byte))
+			*dest = string(src)
 			return nil
 		}
 	case string:
-		switch dest.(type) {
+		switch dest := dest.(type) {
 		case *[]byte:
-			d := dest.(*[]byte)
-			*d = []byte(src.(string))
+			*dest = []byte(src)
 			return nil
 		case *string:
-			d := dest.(*string)
-			*d = src.(string)
+			*dest = src
 			return nil
+		}
+	case int8:
+		switch dest := dest.(type) {
+		case *float32:
+			*dest = float32(src)
+			return nil
+		}
+	case int16:
+		switch dest := dest.(type) {
+		case *float32:
+			*dest = float32(src)
+			return nil
+		}
+	case int32:
+		switch dest := dest.(type) {
+		case *float32:
+			// check for 32bit float integer precision loss
+			if src <= 16777216 {
+				*dest = float32(src)
+				return nil
+			}
 		}
 	}
 
