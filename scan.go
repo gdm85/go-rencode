@@ -56,6 +56,7 @@ func (d *Decoder) Scan(targets ...interface{}) error {
 // Scan will scan the list to fill in the specified target objects; if possible,
 // a conversion will be performed. If targets have not pointer types or if the conversion is
 // not possible, an error will be returned.
+// 32-bit integers larger than 16777216 will be imprecisely allowed to cast to float32.
 func (l *List) Scan(targets ...interface{}) error {
 	if len(targets) > l.Length() {
 		return errors.New("not enough elements in list")
@@ -138,11 +139,8 @@ func convertAssign(src, dest interface{}) error {
 	case int32:
 		switch dest := dest.(type) {
 		case *float32:
-			// check for 32bit float integer precision loss
-			if src <= 16777216 {
-				*dest = float32(src)
-				return nil
-			}
+			*dest = float32(src)
+			return nil
 		}
 	}
 
