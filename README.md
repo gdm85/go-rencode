@@ -66,4 +66,4 @@ the simpler types enumerated above.
 
 ## License
 
-go-rencode is licensed under GNU GPL v2, see [COPYING] (./COPYING) for license information.
+go-rencode is licensed under GNU GPL v2, see [COPYING](./COPYING) for license information.
