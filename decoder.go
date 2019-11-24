@@ -20,6 +20,7 @@ package rencode
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -43,6 +44,50 @@ func init() {
 // NewDecoder returns a rencode decoder that sources all bytes from the specified reader
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r}
+}
+
+// Dump will dump the content of the specified bytes slice to the specified writer, for debugging purposes.
+func Dump(w io.Writer, b []byte) error {
+	r := NewDecoder(bytes.NewReader(b))
+
+	for i := 0; ; i++ {
+		v, err := r.DecodeNext()
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
+
+		dumpValue(w, fmt.Sprintf("%d:\t", i), v)
+	}
+	return nil
+}
+
+func dumpValue(w io.Writer, prefix string, v interface{}) {
+	switch obj := v.(type) {
+	case Dictionary:
+		l := obj.Length()
+		if l == 0 {
+			fmt.Fprintf(w, "%s[ empty dictionary ]\n", prefix)
+		} else {
+			for i := 0; i < l; i++ {
+				dumpValue(w, prefix+fmt.Sprintf("[%s] -> ", obj.Keys()[i]), obj.Values()[i])
+			}
+		}
+	case List:
+		if len(obj.values) == 0 {
+			fmt.Fprintf(w, "%s[ empty list ]\n", prefix)
+		} else {
+			for i, v := range obj.values {
+				dumpValue(w, prefix+fmt.Sprintf("[%d] -> ", i), v)
+			}
+		}
+	case []uint8:
+		fmt.Fprintf(w, "%s%T: %q\n", prefix, v, string(obj))
+	default:
+		fmt.Fprintf(w, "%s%T: %v\n", prefix, v, v)
+	}
 }
 
 func (r *Decoder) readByte() (byte, error) {
