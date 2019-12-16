@@ -3,9 +3,9 @@
 package main
 
 //
-// go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
-// Copyright (C) 2015 gdm85 - https://github.com/gdm85/go-rencode/
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,9 +29,9 @@ import (
 // template block starts
 const top = `package rencode
 //
-// go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
-// Copyright (C) 2015 gdm85 - https://github.com/gdm85/go-rencode/
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License

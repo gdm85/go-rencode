@@ -1,9 +1,9 @@
 package rencode
 
 //
-// go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
-// Copyright (C) 2015 gdm85 - https://github.com/gdm85/go-rencode/
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -114,6 +114,28 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 		return r.EncodeBytes([]byte(x))
 	case int8:
 		return r.EncodeInt8(x)
+	case int:
+		if math.MinInt8 <= x && x <= math.MaxInt8 {
+			return r.EncodeInt8(int8(x))
+		}
+		if math.MinInt16 <= x && x <= math.MaxInt16 {
+			return r.EncodeInt16(int16(x))
+		}
+		if math.MinInt32 <= x && x <= math.MaxInt32 {
+			return r.EncodeInt32(int32(x))
+		}
+		return r.EncodeInt64(int64(x))
+	case uint8:
+		if x <= math.MaxInt8 {
+			return r.EncodeInt8(int8(x))
+		}
+	case uint16:
+		if x <= math.MaxInt8 {
+			return r.EncodeInt8(int8(x))
+		}
+		if x <= math.MaxInt16 {
+			return r.EncodeInt16(int16(x))
+		}
 	case int16:
 		if math.MinInt8 <= x && x <= math.MaxInt8 {
 			return r.EncodeInt8(int8(x))
@@ -148,28 +170,6 @@ func (r *Encoder) encodeSingle(data interface{}) error {
 			return r.EncodeInt32(int32(x))
 		}
 		return r.EncodeInt64(int64(x))
-	case int:
-		if math.MinInt8 <= x && x <= math.MaxInt8 {
-			return r.EncodeInt8(int8(x))
-		}
-		if math.MinInt16 <= x && x <= math.MaxInt16 {
-			return r.EncodeInt16(int16(x))
-		}
-		if math.MinInt32 <= x && x <= math.MaxInt32 {
-			return r.EncodeInt32(int32(x))
-		}
-		return r.EncodeInt64(int64(x))
-	case uint8:
-		if x <= math.MaxInt8 {
-			return r.EncodeInt8(int8(x))
-		}
-	case uint16:
-		if x <= math.MaxInt8 {
-			return r.EncodeInt8(int8(x))
-		}
-		if x <= math.MaxInt16 {
-			return r.EncodeInt16(int16(x))
-		}
 	case uint64, uint:
 		s := fmt.Sprintf("%d", data)
 		if len(s) > MAX_INT_LENGTH {
@@ -189,43 +189,10 @@ func convertAssignInteger(src, dest interface{}) error {
 			*dv = sv
 			return nil
 		}
-	case int32:
-		switch dv := dest.(type) {
-		case *int32:
-			*dv = sv
-			return nil
-		case *int8:
-			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ConversionOverflow{"int32", "int8"}
-			}
-			*dv = int8(sv)
-			return nil
-		case *int16:
-			if sv > math.MaxInt16 || sv < math.MinInt16 {
-				return ConversionOverflow{"int32", "int16"}
-			}
-			*dv = int16(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
-			return nil
-		case *int:
-			*dv = int(sv)
-			return nil
-		}
 	case int64:
 		switch dv := dest.(type) {
 		case *int64:
 			*dv = sv
-			return nil
-		case *int:
-			*dv = int(sv)
-			return nil
-		case *int8:
-			if sv > math.MaxInt8 || sv < math.MinInt8 {
-				return ConversionOverflow{"int64", "int8"}
-			}
-			*dv = int8(sv)
 			return nil
 		case *int16:
 			if sv > math.MaxInt16 || sv < math.MinInt16 {
@@ -239,20 +206,20 @@ func convertAssignInteger(src, dest interface{}) error {
 			}
 			*dv = int32(sv)
 			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ConversionOverflow{"int64", "int8"}
+			}
+			*dv = int8(sv)
+			return nil
 		}
 	case int:
 		switch dv := dest.(type) {
 		case *int:
 			*dv = sv
-			return nil
-		case *int32:
-			if sv > math.MaxInt32 || sv < math.MinInt32 {
-				return ConversionOverflow{"int", "int32"}
-			}
-			*dv = int32(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
 			return nil
 		case *int8:
 			if sv > math.MaxInt8 || sv < math.MinInt8 {
@@ -266,11 +233,23 @@ func convertAssignInteger(src, dest interface{}) error {
 			}
 			*dv = int16(sv)
 			return nil
+		case *int32:
+			if sv > math.MaxInt32 || sv < math.MinInt32 {
+				return ConversionOverflow{"int", "int32"}
+			}
+			*dv = int32(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
+			return nil
 		}
 	case int8:
 		switch dv := dest.(type) {
 		case *int8:
 			*dv = sv
+			return nil
+		case *int64:
+			*dv = int64(sv)
 			return nil
 		case *int:
 			*dv = int(sv)
@@ -280,9 +259,6 @@ func convertAssignInteger(src, dest interface{}) error {
 			return nil
 		case *int32:
 			*dv = int32(sv)
-			return nil
-		case *int64:
-			*dv = int64(sv)
 			return nil
 		}
 	case uint8:
@@ -349,6 +325,30 @@ func convertAssignInteger(src, dest interface{}) error {
 				return ConversionOverflow{"uint32", "uint16"}
 			}
 			*dv = uint16(sv)
+			return nil
+		}
+	case int32:
+		switch dv := dest.(type) {
+		case *int32:
+			*dv = sv
+			return nil
+		case *int:
+			*dv = int(sv)
+			return nil
+		case *int8:
+			if sv > math.MaxInt8 || sv < math.MinInt8 {
+				return ConversionOverflow{"int32", "int8"}
+			}
+			*dv = int8(sv)
+			return nil
+		case *int16:
+			if sv > math.MaxInt16 || sv < math.MinInt16 {
+				return ConversionOverflow{"int32", "int16"}
+			}
+			*dv = int16(sv)
+			return nil
+		case *int64:
+			*dv = int64(sv)
 			return nil
 		}
 	}

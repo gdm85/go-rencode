@@ -1,9 +1,9 @@
 package rencode
 
 //
-// go-rencode v0.1.0 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
-// Copyright (C) 2015 gdm85 - https://github.com/gdm85/go-rencode/
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,10 +20,10 @@ package rencode
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 )
 
@@ -83,19 +83,21 @@ func (d *Dictionary) Zip() (map[string]interface{}, error) {
 	return result, nil
 }
 
-var camel = regexp.MustCompile("(^[^A-Z0-9]*|[A-Z0-9]*)([A-Z0-9][^A-Z]+|$)")
-
-func toUnderscore(s string) string {
-	var a []string
-	for _, sub := range camel.FindAllStringSubmatch(s, -1) {
-		if sub[1] != "" {
-			a = append(a, sub[1])
-		}
-		if sub[2] != "" {
-			a = append(a, sub[2])
-		}
+// ToSnakeCase will convert a 'CamelCase' string to the corresponding 'under_score' representation.
+func ToSnakeCase(name string) string {
+	if len(name) == 0 {
+		return ""
 	}
-	return strings.ToLower(strings.Join(a, "_"))
+	b := bytes.NewBufferString("")
+	b.WriteByte(name[0])
+	for _, v := range name[1:] {
+		if v >= 'A' && v <= 'Z' {
+			b.WriteRune('_')
+		}
+		b.WriteRune(v)
+	}
+
+	return strings.ToLower(b.String())
 }
 
 func (d *Dictionary) ToStruct(dest interface{}) error {
@@ -116,7 +118,7 @@ func (d *Dictionary) ToStruct(dest interface{}) error {
 		f := t.Field(i)
 		// destination field
 		ivf := iv.Field(i)
-		name := toUnderscore(f.Name)
+		name := ToSnakeCase(f.Name)
 
 		// see if this field is available
 		v, ok := tmp[name]
