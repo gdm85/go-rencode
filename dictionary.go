@@ -83,19 +83,45 @@ func (d *Dictionary) Zip() (map[string]interface{}, error) {
 	return result, nil
 }
 
+func isUpper(r rune) bool {
+	return r >= 'A' && r <= 'Z'
+}
+
+func isLower(r rune) bool {
+	return r >= 'a' && r <= 'z'
+}
+
 // ToSnakeCase will convert a 'CamelCase' string to the corresponding 'under_score' representation.
 func ToSnakeCase(name string) string {
 	if len(name) == 0 {
 		return ""
 	}
+	delim := '_'
 	b := bytes.NewBufferString("")
-	b.WriteByte(name[0])
-	for _, v := range name[1:] {
-		if v >= 'A' && v <= 'Z' {
-			b.WriteRune('_')
+
+	var prev rune
+	var curr rune
+	for _, next := range name {
+		if curr == delim {
+			if prev != delim {
+				b.WriteRune(delim)
+			}
+		} else if isUpper(curr) {
+			if isLower(prev) || (isUpper(prev) && isLower(next)) {
+				b.WriteRune(delim)
+			}
+			b.WriteRune(curr)
+		} else if curr != 0 {
+			b.WriteRune(curr)
 		}
-		b.WriteRune(v)
+		prev = curr
+		curr = next
 	}
+
+	if isUpper(curr) && isLower(prev) && prev != 0 {
+		b.WriteRune(delim)
+	}
+	b.WriteRune(curr)
 
 	return strings.ToLower(b.String())
 }

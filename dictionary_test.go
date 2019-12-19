@@ -25,12 +25,16 @@ func TestToSnakeCase(t *testing.T) {
 		Input  string
 		Output string
 	}{
+		{"", ""},
+		{"small", "small"},
 		{"TestCase", "test_case"},
 		{"testCase", "test_case"},
 		{"ETA", "eta"},
 		{"JSONData", "json_data"},
 		{"entityID", "entity_id"},
 		{"AAArgh", "aa_argh"},
+		{"zZ", "z_z"},
+		{"already_converted", "already_converted"},
 	}
 
 	for _, testCase := range table {
