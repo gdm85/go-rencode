@@ -58,6 +58,42 @@ func (d *Dictionary) Add(key, value interface{}) {
 	d.values = append(d.values, value)
 }
 
+// Get returns the value in the dictionary corresponding to the specified key.
+// If the key is not found then 'nil, false' is returned instead.
+// Keys of type 'string' and '[]byte' are both compared as if they were strings.
+//NOTE: slice keys cannot be used with this method.
+func (d *Dictionary) Get(key interface{}) (interface{}, bool) {
+	// normalize a byte array key to string
+	if keyAsByteArray, ok := key.([]byte); ok {
+		return d.internalGet(string(keyAsByteArray))
+	}
+
+	// any other key type
+	// notice that here slice keys will not be treated in any particular way
+	return d.internalGet(key)
+}
+
+func (d *Dictionary) internalGet(key interface{}) (interface{}, bool) {
+	for i, k := range d.keys {
+		// convert byte array keys to string
+		if kAsByteArray, ok := k.([]byte); ok {
+			k := string(kAsByteArray)
+
+			if k == key {
+				return d.values[i], true
+			}
+			continue
+		}
+
+		// generic inteface comparison
+		if k == key {
+			return d.values[i], true
+		}
+	}
+
+	return nil, false
+}
+
 // Zip returns a map with strings as keys or an error if a duplicate key exists.
 func (d *Dictionary) Zip() (map[string]interface{}, error) {
 	result := map[string]interface{}{}

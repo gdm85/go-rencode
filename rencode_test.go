@@ -21,10 +21,8 @@ package rencode
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"strings"
 	"testing"
 )
@@ -38,8 +36,6 @@ func TestFixedPosInts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		t.Log(hex.Dump(b.Bytes()))
 
 		d := NewDecoder(&b)
 
@@ -63,8 +59,6 @@ func TestDecodeChar(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		t.Log(hex.Dump(b.Bytes()))
 
 		d := NewDecoder(&b)
 
@@ -111,8 +105,6 @@ func TestDecodeShort(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		t.Log(hex.Dump(b.Bytes()))
-
 		d := NewDecoder(&b)
 
 		found, err := d.DecodeNext()
@@ -136,8 +128,6 @@ func TestDecodeInt(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		t.Log(hex.Dump(b.Bytes()))
-
 		d := NewDecoder(&b)
 
 		found, err := d.DecodeNext()
@@ -160,8 +150,6 @@ func TestDecodeLongLong(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		t.Log(hex.Dump(b.Bytes()))
 
 		d := NewDecoder(&b)
 
@@ -191,8 +179,6 @@ func TestDecodeBigNumber(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -216,8 +202,6 @@ func TestDecodeFloat32(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Log(hex.Dump(b.Bytes()))
 
 	d := NewDecoder(&b)
 
@@ -243,8 +227,6 @@ func TestDecodeFloat64(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -268,8 +250,6 @@ func TestDecodeFixedString(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Log(hex.Dump(b.Bytes()))
 
 	d := NewDecoder(&b)
 
@@ -295,8 +275,6 @@ func TestDecodeString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -321,8 +299,6 @@ func TestDecodeUnicode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -345,8 +321,6 @@ func TestDecodeNone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -368,8 +342,6 @@ func TestDecodeBool(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		t.Log(hex.Dump(b.Bytes()))
 
 		d := NewDecoder(&b)
 
@@ -396,8 +368,6 @@ func TestDecodeStringBytes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		t.Log(hex.Dump(b.Bytes()))
 
 		d := NewDecoder(&b)
 
@@ -426,8 +396,6 @@ func TestDecodeFixedList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -436,19 +404,7 @@ func TestDecodeFixedList(t *testing.T) {
 	}
 	f := found.(List)
 
-	for i, v := range l.Values() {
-		fv := f.Values()[i]
-		switch v.(type) {
-		case []byte:
-			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
-			}
-		default:
-			if v != fv {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
-			}
-		}
-	}
+	listCompareVerbose(t, &l, &f)
 }
 
 func TestDecodeList(t *testing.T) {
@@ -466,8 +422,6 @@ func TestDecodeList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -476,19 +430,7 @@ func TestDecodeList(t *testing.T) {
 	}
 	f := found.(List)
 
-	for i, v := range l.Values() {
-		fv := f.Values()[i]
-		switch v.(type) {
-		case []byte:
-			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
-			}
-		default:
-			if v != fv {
-				t.Fatalf("index %d: expected %q (type %T) but %q (type %T) found", i, v, v, fv, fv)
-			}
-		}
-	}
+	listCompareVerbose(t, &l, &f)
 }
 
 func TestDecodeFixedDict(t *testing.T) {
@@ -504,37 +446,17 @@ func TestDecodeFixedDict(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
+	// start decoding
 	d := NewDecoder(&b)
 
+	// a dictionary is expected
 	found, err := d.DecodeNext()
 	if err != nil {
 		t.Fatal(err)
 	}
-	f1 := found.(Dictionary)
-	f, err := f1.Zip()
-	if err != nil {
-		t.Fatal(err)
-	}
-	a, err := dict.Zip()
-	if err != nil {
-		t.Fatal(err)
-	}
+	decodedDict := found.(Dictionary)
 
-	for k, v := range a {
-		fv := f[k]
-		switch v.(type) {
-		case []byte:
-			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %v: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
-			}
-		default:
-			if v != fv {
-				t.Fatalf("index %v: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
-			}
-		}
-	}
+	dictCompareVerbose(t, &dict, &decodedDict)
 }
 
 func TestDecodeDictionary(t *testing.T) {
@@ -560,8 +482,6 @@ func TestDecodeDictionary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(hex.Dump(b.Bytes()))
-
 	d := NewDecoder(&b)
 
 	found, err := d.DecodeNext()
@@ -569,43 +489,13 @@ func TestDecodeDictionary(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := found.(Dictionary)
-	z, err := f.Zip()
-	if err != nil {
-		t.Fatal(err)
-	}
-	a, err := dict.Zip()
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	for k, v := range a {
-		fv := z[k]
-		switch v.(type) {
-		case []byte:
-			if bytes.Compare(v.([]byte), fv.([]byte)) != 0 {
-				t.Fatalf("index %s: expected %q (type %T) but %q (type %T) found", k, v, v, fv, fv)
-			}
-		case Dictionary:
-			d1 := v.(Dictionary)
-			d2 := fv.(Dictionary)
-			if !dictCompare(&d1, &d2) {
-				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
-			}
-		case List:
-			l1 := v.(List)
-			l2 := fv.(List)
-			if !listCompare(&l1, &l2) {
-				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
-			}
-		default:
-			if v != fv {
-				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, fv, fv)
-			}
-		}
+	if !dictCompareVerbose(t, &dict, &f) {
+		return
 	}
 
 	// check that we have a carrot in one of the nested list values
-	v, ok := z["z 10"]
+	v, ok := f.Get("z 10")
 	if !ok {
 		t.Fatal("key not found")
 	}
@@ -615,21 +505,6 @@ func TestDecodeDictionary(t *testing.T) {
 	fv := l.Values()[1]
 	if string(fv.([]byte)) != "carrot" {
 		t.Fatal("carrot not found")
-	}
-}
-
-func TestDictionaryCompare(t *testing.T) {
-	var d1, d2 Dictionary
-
-	for i := 1; i <= 10; i++ {
-		key := fmt.Sprintf("key %d", i)
-
-		d1.Add(key, rand.Int())
-		d2.Add(key, rand.Int())
-	}
-
-	if dictCompare(&d1, &d2) {
-		t.Fatal("for some reason, dictionaries that should be different are the same")
 	}
 }
 
@@ -653,10 +528,78 @@ func TestDecodeIntIntoFloat(t *testing.T) {
 	}
 }
 
-func listCompare(a, b *List) bool {
-	return false
+func listCompareVerbose(t *testing.T, a, b *List) bool {
+	if a.Length() != b.Length() {
+		t.Errorf("list length mismatch: %v != %v", a.Length(), b.Length())
+		return false
+	}
+
+	matching := true
+	for i, aV := range a.Values() {
+		bV := b.Values()[i]
+
+		// normalize both values to string if they are of []byte type
+		if v, ok := aV.([]byte); ok {
+			aV = string(v)
+		}
+		if v, ok := bV.([]byte); ok {
+			bV = string(v)
+		}
+
+		if aV != bV {
+			t.Errorf("index %d: expected %q (type %T) but %q (type %T) found", i, aV, aV, bV, bV)
+			matching = false
+		}
+	}
+
+	return matching
 }
 
-func dictCompare(a, b *Dictionary) bool {
-	return false
+func dictCompareVerbose(t *testing.T, a, b *Dictionary) bool {
+	if a.Length() != b.Length() {
+		t.Errorf("dictionary length mismatch: %v != %v", a.Length(), b.Length())
+		return false
+	}
+
+	matching := true
+	for _, k := range a.Keys() {
+		// get value on both dictionaries
+		aV, ok := a.Get(k)
+		if !ok {
+			t.Errorf("value with key %v not found on first dictionary", k)
+			return false
+		}
+		bV, ok := b.Get(k)
+		if !ok {
+			t.Errorf("value with key %v not found on second dictionary", k)
+			return false
+		}
+
+		// normalize both values to string if they are of []byte type
+		if v, ok := aV.([]byte); ok {
+			aV = string(v)
+		}
+		if v, ok := bV.([]byte); ok {
+			bV = string(v)
+		}
+
+		switch v := aV.(type) {
+		case Dictionary:
+			d2 := bV.(Dictionary)
+			if !dictCompareVerbose(t, &v, &d2) {
+				matching = false
+			}
+		case List:
+			l2 := bV.(List)
+			if !listCompareVerbose(t, &v, &l2) {
+				matching = false
+			}
+		default:
+			if aV != bV {
+				t.Fatalf("index %q: expected %v (type %T) but %v (type %T) found", k, v, v, bV, bV)
+			}
+		}
+	}
+
+	return matching
 }
