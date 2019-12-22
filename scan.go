@@ -1,9 +1,7 @@
-package rencode
-
 //
-// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.2 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
-// Copyright (C) 2019 gdm85 - https://github.com/gdm85/go-rencode/
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,6 +16,8 @@ package rencode
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+package rencode
 
 import (
 	"errors"

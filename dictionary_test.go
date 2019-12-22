@@ -1,4 +1,5 @@
-// go-rencode v0.1.1 - Go implementation of rencode - fast (basic)
+//
+// go-rencode v0.1.2 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
 // Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
