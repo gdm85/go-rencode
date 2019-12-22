@@ -20,11 +20,10 @@ package rencode
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
+	"unicode"
 )
 
 var (
@@ -83,47 +82,26 @@ func (d *Dictionary) Zip() (map[string]interface{}, error) {
 	return result, nil
 }
 
-func isUpper(r rune) bool {
-	return r >= 'A' && r <= 'Z'
-}
-
-func isLower(r rune) bool {
-	return r >= 'a' && r <= 'z'
-}
-
-// ToSnakeCase will convert a 'CamelCase' string to the corresponding 'under_score' representation.
-func ToSnakeCase(name string) string {
-	if len(name) == 0 {
-		return ""
+// ToSnakeCase will convert a 'CamelCase' string to the corresponding 'snake_case' representation.
+// Acronyms are converted to lower-case and preceded by an underscore.
+func ToSnakeCase(s string) string {
+	in := []rune(s)
+	isLower := func(idx int) bool {
+		return idx >= 0 && idx < len(in) && unicode.IsLower(in[idx])
 	}
-	delim := '_'
-	b := bytes.NewBufferString("")
 
-	var prev rune
-	var curr rune
-	for _, next := range name {
-		if curr == delim {
-			if prev != delim {
-				b.WriteRune(delim)
+	out := make([]rune, 0, len(in)+len(in)/2)
+	for i, r := range in {
+		if unicode.IsUpper(r) {
+			r = unicode.ToLower(r)
+			if i > 0 && in[i-1] != '_' && (isLower(i-1) || isLower(i+1)) {
+				out = append(out, '_')
 			}
-		} else if isUpper(curr) {
-			if isLower(prev) || (isUpper(prev) && isLower(next)) {
-				b.WriteRune(delim)
-			}
-			b.WriteRune(curr)
-		} else if curr != 0 {
-			b.WriteRune(curr)
 		}
-		prev = curr
-		curr = next
+		out = append(out, r)
 	}
 
-	if isUpper(curr) && isLower(prev) && prev != 0 {
-		b.WriteRune(delim)
-	}
-	b.WriteRune(curr)
-
-	return strings.ToLower(b.String())
+	return string(out)
 }
 
 func (d *Dictionary) ToStruct(dest interface{}) error {
