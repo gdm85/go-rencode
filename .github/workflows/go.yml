@@ -25,4 +25,4 @@ jobs:
         # A directory to store and save the cache
         path: ~/go/pkg/mod
         # An explicit key for restoring and saving the cache
-        key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-${{ hashFiles('go.mod') }}
