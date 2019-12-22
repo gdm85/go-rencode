@@ -18,11 +18,3 @@ jobs:
 
     - name: Build
       run: make
-
-    - name: Cache
-      uses: actions/cache@v1.0.3
-      with:
-        # A directory to store and save the cache
-        path: ~/go/pkg/mod
-        # An explicit key for restoring and saving the cache
-        key: ${{ runner.os }}-${{ hashFiles('go.mod') }}
