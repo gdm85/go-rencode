@@ -22,6 +22,8 @@ package rencode
 import "testing"
 
 func TestToSnakeCase(t *testing.T) {
+	t.Parallel()
+
 	table := []struct {
 		Input  string
 		Output string
@@ -46,5 +48,42 @@ func TestToSnakeCase(t *testing.T) {
 				"For input '%s' got '%s' (expected '%s')",
 				testCase.Input, value, testCase.Output)
 		}
+	}
+}
+
+func TestToStruct(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma uint8
+	}
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+	d.Add("gamma", uint8(42))
+
+	err := d.ToStruct(&s)
+	if err != nil {
+		t.Errorf("expected succcess but got %v", err)
+	}
+}
+
+func TestExtraFieldsFailure(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+	}
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+	d.Add("gamma", uint8(42))
+
+	err := d.ToStruct(&s)
+	if err == nil {
+		t.Error("expected failure")
 	}
 }

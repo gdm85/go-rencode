@@ -28,8 +28,10 @@ import (
 )
 
 func TestFixedPosInts(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []int8{10, -10} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -51,8 +53,10 @@ func TestFixedPosInts(t *testing.T) {
 }
 
 func TestDecodeChar(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []int8{100, -100} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -74,7 +78,9 @@ func TestDecodeChar(t *testing.T) {
 }
 
 func TestSingleByteArray(t *testing.T) {
-	b := bytes.Buffer{}
+	t.Parallel()
+
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 	err := e.Encode([]byte{62})
 	if err != nil {
@@ -96,8 +102,10 @@ func TestSingleByteArray(t *testing.T) {
 }
 
 func TestDecodeShort(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []int16{27123, -27123} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -119,8 +127,10 @@ func TestDecodeShort(t *testing.T) {
 }
 
 func TestDecodeInt(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []int32{7483648, -7483648} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -142,8 +152,10 @@ func TestDecodeInt(t *testing.T) {
 }
 
 func TestDecodeLongLong(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []int64{8223372036854775808, -8223372036854775808} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -165,13 +177,15 @@ func TestDecodeLongLong(t *testing.T) {
 }
 
 func TestDecodeBigNumber(t *testing.T) {
+	t.Parallel()
+
 	var value big.Int
 
 	value.SetUint64(^uint64(0))
 
 	value.Mul(&value, big.NewInt(32))
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -193,9 +207,11 @@ func TestDecodeBigNumber(t *testing.T) {
 }
 
 func TestDecodeFloat32(t *testing.T) {
+	t.Parallel()
+
 	value := float32(1234.56)
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -217,9 +233,11 @@ func TestDecodeFloat32(t *testing.T) {
 }
 
 func TestDecodeFloat64(t *testing.T) {
+	t.Parallel()
+
 	value := float64(1234.56)
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -241,9 +259,11 @@ func TestDecodeFloat64(t *testing.T) {
 }
 
 func TestDecodeFixedString(t *testing.T) {
+	t.Parallel()
+
 	value := "foobarbaz"
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -265,9 +285,11 @@ func TestDecodeFixedString(t *testing.T) {
 }
 
 func TestDecodeString(t *testing.T) {
+	t.Parallel()
+
 	value := strings.Repeat("f", 255)
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -289,9 +311,11 @@ func TestDecodeString(t *testing.T) {
 }
 
 func TestDecodeUnicode(t *testing.T) {
+	t.Parallel()
+
 	value := "fööbar"
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(value)
@@ -313,7 +337,9 @@ func TestDecodeUnicode(t *testing.T) {
 }
 
 func TestDecodeNone(t *testing.T) {
-	b := bytes.Buffer{}
+	t.Parallel()
+
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(nil)
@@ -333,9 +359,40 @@ func TestDecodeNone(t *testing.T) {
 	}
 }
 
+func TestEncodeNilInterface(t *testing.T) {
+	t.Parallel()
+
+	var b bytes.Buffer
+	e := NewEncoder(&b)
+
+	type someInterface interface{
+		SomeMethod()
+	}
+
+	var v someInterface
+
+	err := e.Encode(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	d := NewDecoder(&b)
+
+	found, err := d.DecodeNext()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nil != found {
+		t.Fatalf("expected %v but %v found", nil, found)
+	}
+}
+
 func TestDecodeBool(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []bool{true, false} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -357,11 +414,13 @@ func TestDecodeBool(t *testing.T) {
 }
 
 func TestDecodeStringBytes(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range [][]byte{
 		{202, 132, 100, 114, 97, 119, 1, 0, 0, 63, 1, 242, 63},
 		{202, 132, 100, 114, 97, 119, 1, 0, 0, 63, 1, 242, 63, 1, 60, 132, 120, 50, 54, 52, 49, 51, 48, 58, 0, 0, 0, 1, 65, 154, 35, 215, 48, 204, 4, 35, 242, 3, 122, 218, 67, 192, 127, 40, 241, 127, 2, 86, 240, 63, 135, 177, 23, 119, 63, 31, 226, 248, 19, 13, 192, 111, 74, 126, 2, 15, 240, 31, 239, 48, 85, 238, 159, 155, 197, 241, 23, 119, 63, 2, 23, 245, 63, 24, 240, 86, 36, 176, 15, 187, 185, 248, 242, 255, 0, 126, 123, 141, 206, 60, 188, 1, 27, 254, 141, 169, 132, 93, 220, 252, 121, 184, 8, 31, 224, 63, 244, 226, 75, 224, 119, 135, 229, 248, 3, 243, 248, 220, 227, 203, 193, 3, 224, 127, 47, 134, 59, 5, 99, 249, 254, 35, 196, 127, 17, 252, 71, 136, 254, 35, 196, 112, 4, 177, 3, 63, 5, 220},
 	} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)
@@ -384,11 +443,13 @@ func TestDecodeStringBytes(t *testing.T) {
 }
 
 func TestDecodeFixedList(t *testing.T) {
+	t.Parallel()
+
 	var l List
 
 	l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(l)
@@ -408,13 +469,15 @@ func TestDecodeFixedList(t *testing.T) {
 }
 
 func TestDecodeList(t *testing.T) {
+	t.Parallel()
+
 	var l List
 
 	for i := 0; i < 80; i++ {
 		l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
 	}
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(l)
@@ -434,11 +497,13 @@ func TestDecodeList(t *testing.T) {
 }
 
 func TestDecodeFixedDict(t *testing.T) {
+	t.Parallel()
+
 	var dict Dictionary
 
 	dict.Add("abcdefghijk", int16(1234))
 	dict.Add(false, []byte("bäz"))
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(dict)
@@ -460,6 +525,8 @@ func TestDecodeFixedDict(t *testing.T) {
 }
 
 func TestDecodeDictionary(t *testing.T) {
+	t.Parallel()
+
 	var dict Dictionary
 	var nestedDict Dictionary
 	var nestedList List
@@ -474,7 +541,7 @@ func TestDecodeDictionary(t *testing.T) {
 		dict.Add(fmt.Sprintf("z %d", i), nestedList)
 	}
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	e := NewEncoder(&b)
 
 	err := e.Encode(dict)
@@ -509,8 +576,10 @@ func TestDecodeDictionary(t *testing.T) {
 }
 
 func TestDecodeIntIntoFloat(t *testing.T) {
+	t.Parallel()
+
 	for _, value := range []interface{}{int8(45), int32(7483648), int32(-7483648)} {
-		b := bytes.Buffer{}
+		var b bytes.Buffer
 		e := NewEncoder(&b)
 
 		err := e.Encode(value)

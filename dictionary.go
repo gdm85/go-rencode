@@ -154,7 +154,8 @@ func (d *Dictionary) ToStruct(dest interface{}) error {
 
 	iv := reflect.Indirect(v)
 	t := iv.Type()
-	for i := 0; i < t.NumField(); i++ {
+	l := t.NumField()
+	for i := 0; i < l; i++ {
 		f := t.Field(i)
 		// destination field
 		ivf := iv.Field(i)
