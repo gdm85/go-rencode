@@ -442,60 +442,6 @@ func TestDecodeStringBytes(t *testing.T) {
 	}
 }
 
-func TestDecodeFixedList(t *testing.T) {
-	t.Parallel()
-
-	var l List
-
-	l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
-
-	var b bytes.Buffer
-	e := NewEncoder(&b)
-
-	err := e.Encode(l)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d := NewDecoder(&b)
-
-	found, err := d.DecodeNext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := found.(List)
-
-	listCompareVerbose(t, &l, &f)
-}
-
-func TestDecodeList(t *testing.T) {
-	t.Parallel()
-
-	var l List
-
-	for i := 0; i < 80; i++ {
-		l.Add(int8(100), false, []byte("foobar"), []byte("bäz"))
-	}
-
-	var b bytes.Buffer
-	e := NewEncoder(&b)
-
-	err := e.Encode(l)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d := NewDecoder(&b)
-
-	found, err := d.DecodeNext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := found.(List)
-
-	listCompareVerbose(t, &l, &f)
-}
-
 func TestDecodeFixedDict(t *testing.T) {
 	t.Parallel()
 
@@ -595,33 +541,6 @@ func TestDecodeIntIntoFloat(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-}
-
-func listCompareVerbose(t *testing.T, a, b *List) bool {
-	if a.Length() != b.Length() {
-		t.Errorf("list length mismatch: %v != %v", a.Length(), b.Length())
-		return false
-	}
-
-	matching := true
-	for i, aV := range a.Values() {
-		bV := b.Values()[i]
-
-		// normalize both values to string if they are of []byte type
-		if v, ok := aV.([]byte); ok {
-			aV = string(v)
-		}
-		if v, ok := bV.([]byte); ok {
-			bV = string(v)
-		}
-
-		if aV != bV {
-			t.Errorf("index %d: expected %q (type %T) but %q (type %T) found", i, aV, aV, bV, bV)
-			matching = false
-		}
-	}
-
-	return matching
 }
 
 func dictCompareVerbose(t *testing.T, a, b *Dictionary) bool {
