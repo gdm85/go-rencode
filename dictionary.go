@@ -140,6 +140,8 @@ func ToSnakeCase(s string) string {
 	return string(out)
 }
 
+// ToStruct will map a Dictionary into a struct, recursively.
+// All dictionary keys must map to a field or an error will be returned.
 func (d *Dictionary) ToStruct(dest interface{}) error {
 	v := reflect.ValueOf(dest)
 	if v.Kind() != reflect.Ptr {

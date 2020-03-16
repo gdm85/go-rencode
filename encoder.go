@@ -29,8 +29,7 @@ import (
 
 // Constants as defined in https://github.com/aresch/rencode/blob/master/rencode/rencode.pyx
 const (
-	DEFAULT_FLOAT_BITS = 32 // Default number of bits for serialized floats, either 32 or 64 (also a parameter for dumps()).
-	MAX_INT_LENGTH     = 64 // Maximum length of integer when written as base 10 string.
+	MAX_INT_LENGTH = 64 // Maximum length of integer when written as base 10 string.
 	// The bencode 'typecodes' such as i, d, etc have been extended and relocated on the base-256 character set.
 	CHR_LIST    = 59
 	CHR_DICT    = 60
