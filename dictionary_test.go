@@ -1,5 +1,5 @@
 //
-// go-rencode v0.1.2 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.4 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
 // Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
@@ -64,7 +64,7 @@ func TestToStruct(t *testing.T) {
 	d.Add("beta", "test")
 	d.Add("gamma", uint8(42))
 
-	err := d.ToStruct(&s)
+	err := d.ToStruct(&s, "")
 	if err != nil {
 		t.Errorf("expected succcess but got %v", err)
 	}
@@ -82,8 +82,26 @@ func TestExtraFieldsFailure(t *testing.T) {
 	d.Add("beta", "test")
 	d.Add("gamma", uint8(42))
 
-	err := d.ToStruct(&s)
+	err := d.ToStruct(&s, "")
 	if err == nil {
 		t.Error("expected failure")
+	}
+}
+
+func TestExcludeTag(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma float64 `rencode:"foo"`
+	}
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+
+	err := d.ToStruct(&s, "foo")
+	if err != nil {
+		t.Errorf("mapping failed: %v", err)
 	}
 }

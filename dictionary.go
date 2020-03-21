@@ -1,5 +1,5 @@
 //
-// go-rencode v0.1.2 - Go implementation of rencode - fast (basic)
+// go-rencode v0.1.4 - Go implementation of rencode - fast (basic)
 //                  object serialization similar to bencode
 // Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-rencode/
 
@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"unicode"
 )
 
@@ -142,7 +143,8 @@ func ToSnakeCase(s string) string {
 
 // ToStruct will map a Dictionary into a struct, recursively.
 // All dictionary keys must map to a field or an error will be returned.
-func (d *Dictionary) ToStruct(dest interface{}) error {
+// It is possible to exclude fields with a specific annotation.
+func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) error {
 	v := reflect.ValueOf(dest)
 	if v.Kind() != reflect.Ptr {
 		return fmt.Errorf("expected pointer to struct, got %v", v.Type())
@@ -162,6 +164,25 @@ func (d *Dictionary) ToStruct(dest interface{}) error {
 		// destination field
 		ivf := iv.Field(i)
 		name := ToSnakeCase(f.Name)
+
+		if excludeAnnotationTag != "" {
+			rencodeTag, ok := f.Tag.Lookup("rencode")
+			if ok {
+				tags := strings.Split(rencodeTag, ",")
+				exclude := false
+				for _, tag := range tags {
+					if tag == excludeAnnotationTag {
+						exclude = true
+						break
+					}
+				}
+				if exclude {
+					// skip this field
+					delete(tmp, name)
+					continue
+				}
+			}
+		}
 
 		// see if this field is available
 		v, ok := tmp[name]
@@ -191,7 +212,7 @@ func (d *Dictionary) ToStruct(dest interface{}) error {
 
 					obj := reflect.New(elemType)
 
-					err = d.ToStruct(obj.Interface())
+					err = d.ToStruct(obj.Interface(), "")
 					if err != nil {
 						return fmt.Errorf("slice field %q: %v", f.Name, err)
 					}
