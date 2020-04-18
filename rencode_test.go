@@ -365,7 +365,7 @@ func TestEncodeNilInterface(t *testing.T) {
 	var b bytes.Buffer
 	e := NewEncoder(&b)
 
-	type someInterface interface{
+	type someInterface interface {
 		SomeMethod()
 	}
 
@@ -436,7 +436,7 @@ func TestDecodeStringBytes(t *testing.T) {
 		}
 		f := found.([]byte)
 
-		if bytes.Compare(value, f) != 0 {
+		if !bytes.Equal(value, f) {
 			t.Fatalf("expected %v but %v found", value, found)
 		}
 	}

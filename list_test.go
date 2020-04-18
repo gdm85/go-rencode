@@ -78,7 +78,6 @@ func TestDecodeList(t *testing.T) {
 	listCompareVerbose(t, &l, &f)
 }
 
-
 func listCompareVerbose(t *testing.T, a, b *List) bool {
 	if a.Length() != b.Length() {
 		t.Errorf("list length mismatch: %v != %v", a.Length(), b.Length())
@@ -106,3 +105,39 @@ func listCompareVerbose(t *testing.T, a, b *List) bool {
 	return matching
 }
 
+func TestListScanAndShift(t *testing.T) {
+	l1 := NewList(100, true, "hello world", NewList(42, "nesting is awesome"), 3.14, Dictionary{})
+
+	var (
+		i  int
+		b  bool
+		s  string
+		l2 List
+		f  float64
+		d  Dictionary
+	)
+
+	err := l1.Scan(&i, &b, &s, &l2, &f, &d)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if i != 100 || !b || s != "hello world" {
+		t.Error("invalid data scanned")
+	}
+
+	var s2 string
+	shifted := l1.Shift(2)
+	if shifted != 2 {
+		t.Fatalf("could not shift %d items, shifted %d instead", 2, shifted)
+	}
+
+	err = l1.Scan(&s2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if s2 != "hello world" {
+		t.Fatal("could not read third value of the list after shift")
+	}
+}

@@ -71,6 +71,17 @@ func (l *List) Scan(targets ...interface{}) error {
 	return nil
 }
 
+// Shift will remove the specified number of elements from the front of the List and
+// return how many were removed. This will be different than n if the List is shorter.
+func (l *List) Shift(n int) int {
+	max := len(l.values)
+	if max < n {
+		n = max
+	}
+	l.values = l.values[n:]
+	return n
+}
+
 func convertAssign(src, dest interface{}) error {
 	switch src := src.(type) {
 	case bool:
