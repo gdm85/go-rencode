@@ -212,7 +212,7 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 
 					obj := reflect.New(elemType)
 
-					err = d.ToStruct(obj.Interface(), "")
+					err = d.ToStruct(obj.Interface(), excludeAnnotationTag)
 					if err != nil {
 						return fmt.Errorf("slice field %q: %v", f.Name, err)
 					}
