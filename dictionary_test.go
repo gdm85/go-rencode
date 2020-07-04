@@ -105,3 +105,33 @@ func TestExcludeTag(t *testing.T) {
 		t.Errorf("mapping failed: %v", err)
 	}
 }
+
+func TestNestedExcludeTag(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma float64 `rencode:"foo"`
+		Delta []struct {
+			Epsilon bool
+			Zeta int8 `rencode:"foo"`
+		}
+	}
+
+	var d2 Dictionary
+	d2.Add("epsilon", true)
+
+	var l List
+	l.Add(d2)
+
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+	d.Add("delta", l)
+
+	err := d.ToStruct(&s, "foo")
+	if err != nil {
+		t.Errorf("mapping failed: %v", err)
+	}
+}
