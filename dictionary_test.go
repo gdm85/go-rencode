@@ -94,13 +94,13 @@ func TestExcludeTag(t *testing.T) {
 	var s struct {
 		Alpha int
 		Beta  string
-		Gamma float64 `rencode:"foo"`
+		Gamma float64 `rencode:"exclude-me"`
 	}
 	var d Dictionary
 	d.Add("alpha", int(54123))
 	d.Add("beta", "test")
 
-	err := d.ToStruct(&s, "foo")
+	err := d.ToStruct(&s, "exclude-me")
 	if err != nil {
 		t.Errorf("mapping failed: %v", err)
 	}
@@ -112,10 +112,10 @@ func TestNestedExcludeTag(t *testing.T) {
 	var s struct {
 		Alpha int
 		Beta  string
-		Gamma float64 `rencode:"foo"`
+		Gamma float64 `rencode:"exclude-me"`
 		Delta []struct {
 			Epsilon bool
-			Zeta int8 `rencode:"foo"`
+			Zeta    int8 `rencode:"exclude-me"`
 		}
 	}
 
@@ -130,7 +130,7 @@ func TestNestedExcludeTag(t *testing.T) {
 	d.Add("beta", "test")
 	d.Add("delta", l)
 
-	err := d.ToStruct(&s, "foo")
+	err := d.ToStruct(&s, "exclude-me")
 	if err != nil {
 		t.Errorf("mapping failed: %v", err)
 	}

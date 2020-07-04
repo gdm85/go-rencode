@@ -36,6 +36,23 @@ Example:
 	err := e.Scan(&i, &b, &s, &l)
 ```
 
+You can also decode a dictionary directly into a struct:
+```
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma float64 `rencode:"rencode-exclude"`
+	}
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+
+	err := d.ToStruct(&s, "rencode-exclude")
+```
+
+In this example every field/value of the dictionary must be mapped to a struct field, except those tagged as `rencode-exclude`.
+This works as well with nested dictionaries mapping to nested structs.
+
 ## Supported types
 
 Only the following types are supported:
