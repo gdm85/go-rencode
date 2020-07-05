@@ -204,8 +204,26 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 			return fmt.Errorf("field %q: cannot be satisfied", f.Name)
 		}
 
-		// special behaviour for slices
-		if ivf.Kind() == reflect.Slice {
+		// special behaviour for structs and slices
+		if ivf.Kind() == reflect.Struct {
+			d, ok := v.(Dictionary)
+			if !ok {
+				return fmt.Errorf("struct field %q: expected value to be dictionary", f.Name)
+			}
+
+			obj := reflect.New(ivf.Type())
+
+			err = d.ToStruct(obj.Interface(), excludeAnnotationTag)
+			if err != nil {
+				if cvtErr, ok := err.(*RemainingFieldsError); ok {
+					rf[name] = cvtErr.Fields()
+					err = nil
+				} else {
+					return fmt.Errorf("slice field %q: %v", f.Name, err)
+				}
+			}
+			ivf.Set(reflect.Indirect(obj))
+		} else if ivf.Kind() == reflect.Slice {
 			// get value as list
 			var l List
 			err = convertAssign(v, &l)

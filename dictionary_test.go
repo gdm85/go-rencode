@@ -109,6 +109,31 @@ func TestExcludeTag(t *testing.T) {
 	}
 }
 
+func TestNestedStruct(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma struct {
+			Delta bool
+		}
+	}
+
+	var d2 Dictionary
+	d2.Add("delta", true)
+
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+	d.Add("gamma", d2)
+
+	err := d.ToStruct(&s, "")
+	if err != nil {
+		t.Errorf("mapping failed: %v", err)
+	}
+}
+
 func TestNestedExcludeTag(t *testing.T) {
 	t.Parallel()
 
