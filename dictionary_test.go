@@ -19,7 +19,10 @@
 
 package rencode
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestToSnakeCase(t *testing.T) {
 	t.Parallel()
@@ -133,5 +136,83 @@ func TestNestedExcludeTag(t *testing.T) {
 	err := d.ToStruct(&s, "exclude-me")
 	if err != nil {
 		t.Errorf("mapping failed: %v", err)
+	}
+}
+
+func TestSkippableFields(t *testing.T) {
+	t.Parallel()
+	type S struct {
+		Alpha int
+		Beta string `rencode:"skippable"`
+		Gamma float64
+	}
+
+	var s1 S
+	var d1 Dictionary
+	d1.Add("alpha", 123)
+	d1.Add("beta", "test")
+	d1.Add("gamma", 3.142)
+
+	err := d1.ToStruct(&s1, "")
+	if err != nil {
+		t.Errorf("mapping failed: %v", err)
+	}
+	if s1.Beta != "test" {
+		t.Errorf("s1.Beta field skipped by ToStruct")
+	}
+
+	var s2 S
+	var d2 Dictionary
+	d2.Add("alpha", 123)
+	d2.Add("gamma", 3.142)
+
+	err = d2.ToStruct(&s2, "")
+	if err != nil {
+		t.Errorf("mapping failed: %v", err)
+	}
+
+	if s2.Beta != "" {
+		t.Errorf("s1.Beta field populated by ToStruct")
+	}
+}
+
+func TestRemainingFields(t *testing.T) {
+	t.Parallel()
+
+	var s struct {
+		Alpha int
+		Beta  string
+		Gamma []struct {
+			Delta bool
+		}
+	}
+
+	var d2 Dictionary
+	d2.Add("delta", true)
+	d2.Add("unexpected2", 123)
+
+	var l List
+	l.Add(d2)
+
+	var d Dictionary
+	d.Add("alpha", int(54123))
+	d.Add("beta", "test")
+	d.Add("gamma", l)
+	d.Add("unexpected1", false)
+
+	err := d.ToStruct(&s, "")
+	cvtErr, ok := err.(*RemainingFieldsError)
+	if !ok {
+		t.Errorf("ToStruct did not return RemainingFieldsError, instead %s: %v", reflect.TypeOf(err), err)
+	}
+	if _, ok = cvtErr.Fields()["unexpected1"]; !ok {
+		t.Errorf("Error fields missing key 'unexpected1'")
+	}
+	nestedMap, ok := cvtErr.Fields()["gamma"].(map[string]interface{})
+	if !ok {
+		t.Errorf("Error fields missing nested map 'gamma'")
+	}
+	if _, ok = nestedMap["unexpected2"]; !ok {
+		t.Errorf("Nested map missing key 'unexpected2'")
 	}
 }

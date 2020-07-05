@@ -141,6 +141,19 @@ func ToSnakeCase(s string) string {
 	return string(out)
 }
 
+type RemainingFieldsError struct {
+	error error
+	remainingFields map[string]interface{}
+}
+
+func (e *RemainingFieldsError) Error() string {
+	return e.error.Error()
+}
+
+func (e *RemainingFieldsError) Fields() map[string]interface{} {
+	return e.remainingFields
+}
+
 // ToStruct will map a Dictionary into a struct, recursively.
 // All dictionary keys must map to a field or an error will be returned.
 // It is possible to exclude fields with a specific annotation.
@@ -159,34 +172,35 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 	iv := reflect.Indirect(v)
 	t := iv.Type()
 	l := t.NumField()
+	rf := make(map[string]interface{})
 	for i := 0; i < l; i++ {
 		f := t.Field(i)
 		// destination field
 		ivf := iv.Field(i)
 		name := ToSnakeCase(f.Name)
+		skippable := false
+		exclude := false
 
-		if excludeAnnotationTag != "" {
-			rencodeTag, ok := f.Tag.Lookup("rencode")
-			if ok {
-				tags := strings.Split(rencodeTag, ",")
-				exclude := false
-				for _, tag := range tags {
-					if tag == excludeAnnotationTag {
-						exclude = true
-						break
-					}
-				}
-				if exclude {
-					// skip this field
-					delete(tmp, name)
-					continue
+		if rencodeTag, ok := f.Tag.Lookup("rencode"); ok {
+			tags := strings.Split(rencodeTag, ",")
+			for _, tag := range tags {
+				if excludeAnnotationTag != "" && tag == excludeAnnotationTag {
+					exclude = true
+				} else if tag == "skippable" {
+					skippable = true
 				}
 			}
+		}
+		if exclude {
+			// skip this field
+			delete(tmp, name)
+			continue
 		}
 
 		// see if this field is available
 		v, ok := tmp[name]
 		if !ok {
+			if skippable { continue }
 			return fmt.Errorf("field %q: cannot be satisfied", f.Name)
 		}
 
@@ -214,7 +228,12 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 
 					err = d.ToStruct(obj.Interface(), excludeAnnotationTag)
 					if err != nil {
-						return fmt.Errorf("slice field %q: %v", f.Name, err)
+						if cvtErr, ok := err.(*RemainingFieldsError); ok {
+							rf[name] = cvtErr.Fields()
+							err = nil
+						} else {
+							return fmt.Errorf("slice field %q: %v", f.Name, err)
+						}
 					}
 
 					ns.Index(i).Set(reflect.Indirect(obj))
@@ -238,7 +257,13 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 	}
 
 	if len(tmp) != 0 {
-		return fmt.Errorf("%d fields left after parsing: %v", len(tmp), tmp)
+		for k, v := range tmp {
+			rf[k] = v
+		}
+		return &RemainingFieldsError{
+			error:           fmt.Errorf("%d fields left after parsing: %v", len(tmp), tmp),
+			remainingFields: rf,
+		}
 	}
 
 	return nil
