@@ -229,7 +229,7 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 					err = d.ToStruct(obj.Interface(), excludeAnnotationTag)
 					if err != nil {
 						if cvtErr, ok := err.(*RemainingFieldsError); ok {
-							rf[name] = cvtErr.Fields()
+							rf[fmt.Sprintf("%s_%d", name, i)] = cvtErr.Fields()
 							err = nil
 						} else {
 							return fmt.Errorf("slice field %q: %v", f.Name, err)

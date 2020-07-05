@@ -208,7 +208,7 @@ func TestRemainingFields(t *testing.T) {
 	if _, ok = cvtErr.Fields()["unexpected1"]; !ok {
 		t.Errorf("Error fields missing key 'unexpected1'")
 	}
-	nestedMap, ok := cvtErr.Fields()["gamma"].(map[string]interface{})
+	nestedMap, ok := cvtErr.Fields()["gamma_0"].(map[string]interface{})
 	if !ok {
 		t.Errorf("Error fields missing nested map 'gamma'")
 	}
