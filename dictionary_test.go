@@ -117,6 +117,7 @@ func TestNestedExcludeTag(t *testing.T) {
 			Epsilon bool
 			Zeta    int8 `rencode:"exclude-me"`
 		}
+		Omega int64 `rencode:"-"`
 	}
 
 	var d2 Dictionary

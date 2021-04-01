@@ -110,11 +110,23 @@ func convertAssign(src, dest interface{}) error {
 		case *float64:
 			*dest = float64(src)
 			return nil
+		case *int64:
+			*dest = int64(src)
+			return nil
+		case *uint64:
+			*dest = uint64(src)
+			return nil
 		}
 	case float64:
 		switch dest := dest.(type) {
 		case *float64:
 			*dest = src
+			return nil
+		case *int64:
+			*dest = int64(src)
+			return nil
+		case *uint64:
+			*dest = uint64(src)
 			return nil
 		}
 	case []byte:
@@ -137,6 +149,9 @@ func convertAssign(src, dest interface{}) error {
 		}
 	case int8:
 		switch dest := dest.(type) {
+		case *bool:
+			*dest = src != 0
+			return nil
 		case *float32:
 			*dest = float32(src)
 			return nil
@@ -151,6 +166,15 @@ func convertAssign(src, dest interface{}) error {
 		switch dest := dest.(type) {
 		case *float32:
 			*dest = float32(src)
+			return nil
+		case *int32:
+			*dest = int32(src)
+			return nil
+		case *int16:
+			*dest = int16(src)
+			return nil
+		case *uint16:
+			*dest = uint16(src)
 			return nil
 		}
 	}
