@@ -155,11 +155,17 @@ func convertAssign(src, dest interface{}) error {
 		case *float32:
 			*dest = float32(src)
 			return nil
+		case *uint8:
+			*dest = uint8(src)
+			return nil
 		}
 	case int16:
 		switch dest := dest.(type) {
 		case *float32:
 			*dest = float32(src)
+			return nil
+		case *uint16:
+			*dest = uint16(src)
 			return nil
 		}
 	case int32:
@@ -167,11 +173,8 @@ func convertAssign(src, dest interface{}) error {
 		case *float32:
 			*dest = float32(src)
 			return nil
-		case *int32:
-			*dest = int32(src)
-			return nil
-		case *int16:
-			*dest = int16(src)
+		case *uint32:
+			*dest = uint32(src)
 			return nil
 		case *uint16:
 			*dest = uint16(src)
