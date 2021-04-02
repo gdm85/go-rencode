@@ -164,9 +164,9 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 		// destination field
 		ivf := iv.Field(i)
 		name := ToSnakeCase(f.Name)
-		exclude := false
-		rencodeTag, ok := f.Tag.Lookup("rencode")
-		if ok {
+
+		if rencodeTag, ok := f.Tag.Lookup("rencode"); ok {
+			exclude := false
 			if rencodeTag == "-" {
 				exclude = true
 			} else if excludeAnnotationTag != "" {
@@ -178,12 +178,11 @@ func (d *Dictionary) ToStruct(dest interface{}, excludeAnnotationTag string) err
 					}
 				}
 			}
-		}
-
-		if exclude {
-			// skip this field
-			delete(tmp, name)
-			continue
+			if exclude {
+				// skip this field
+				delete(tmp, name)
+				continue
+			}
 		}
 
 		// see if this field is available
